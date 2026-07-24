@@ -6,6 +6,7 @@ import ThemeProvider from "@/components/ThemeProvider";
 import { DeviceLayoutProvider } from "@/contexts/DeviceLayoutContext";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import Navigation from "@/components/Navigation";
+import AmbientParticles from "@/components/AmbientParticles";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -59,10 +60,11 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${caveat.variable} ${lora.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-zinc-950 text-zinc-50 font-sans journal-grid">
+      <body className="min-h-full flex flex-col bg-zinc-950 text-zinc-50 font-sans journal-grid relative">
         <AuthProvider>
           <DeviceLayoutProvider>
             <ThemeProvider>
+              <AmbientParticles />
               <ServiceWorkerRegister />
               <Navigation>{children}</Navigation>
             </ThemeProvider>
