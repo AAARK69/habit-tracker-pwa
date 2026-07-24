@@ -11,7 +11,12 @@ self.addEventListener('push', function (event) {
           url: payload.url || '/'
         },
         tag: 'daily-reminder',
-        renotify: true
+        renotify: true,
+        // Actionable notification buttons for quick lockscreen interaction
+        actions: [
+          { action: 'open_tracker', title: 'Open Tracker 📝' },
+          { action: 'view_history', title: 'View History 📅' }
+        ]
       };
       
       event.waitUntil(
@@ -24,7 +29,10 @@ self.addEventListener('push', function (event) {
           body: text || 'Take a minute to complete your habit tracker!',
           icon: '/app_icon.jpg',
           badge: '/app_icon.jpg',
-          data: { url: '/' }
+          data: { url: '/' },
+          actions: [
+            { action: 'open_tracker', title: 'Open Tracker 📝' }
+          ]
         })
       );
     }
@@ -34,7 +42,12 @@ self.addEventListener('push', function (event) {
 self.addEventListener('notificationclick', function (event) {
   event.notification.close();
   
-  const urlToOpen = new URL(event.notification.data?.url || '/', self.location.origin).href;
+  let targetPath = '/';
+  if (event.action === 'view_history') {
+    targetPath = '/history';
+  }
+
+  const urlToOpen = new URL(targetPath, self.location.origin).href;
   
   event.waitUntil(
     clients.matchAll({

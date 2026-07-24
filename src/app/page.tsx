@@ -5,13 +5,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import NotificationToggle from '@/components/NotificationToggle';
 import { 
-  playCompletionChime, triggerHaptic, updateAppBadge, calculateStreak 
+  playCompletionChime, triggerHaptic, updateAppBadge, 
+  triggerVariableReward, getRandomQuote, calculateStreakWithFreezes,
+  generateMicroInsight, StreakInfo
 } from '@/lib/feedback';
 import { 
   Dumbbell, Bed, Smile, Sparkles, BookOpen, GlassWater, 
   Brain, Flame, Heart, Coffee, ClipboardList, CheckSquare, 
   HelpCircle, CheckCircle, Edit3, Loader2, Check, X, 
-  MessageSquare, Zap
+  MessageSquare, ShieldCheck, Award, Lightbulb, Lock, ArrowRight
 } from 'lucide-react';
 
 const IconMap: Record<string, any> = {
@@ -38,7 +40,16 @@ export default function Dashboard() {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [streak, setStreak] = useState({ currentStreak: 0, bestStreak: 0 });
+  const [streakInfo, setStreakInfo] = useState<StreakInfo>({
+    currentStreak: 0,
+    bestStreak: 0,
+    freezesUsedThisMonth: 0,
+    freezesRemaining: 2,
+    freezeAppliedToday: false,
+    isMilestone: false
+  });
+  const [motivationalQuote, setMotivationalQuote] = useState('');
+  const [microInsight, setMicroInsight] = useState('');
 
   const getLocalTodayDateStr = () => {
     const dateObj = new Date();
@@ -77,15 +88,18 @@ export default function Dashboard() {
 
         if (logError) throw logError;
 
-        // 3. Fetch all log dates for streak calculation
+        // 3. Fetch all log dates for streaks & adaptive insights
         const { data: allLogs } = await supabase
           .from('daily_logs')
-          .select('date')
+          .select('*')
           .eq('user_id', user.id);
 
-        const logDates = allLogs?.map((l: any) => l.date) || [];
-        const streakData = calculateStreak(logDates);
-        setStreak(streakData);
+        const logsList = allLogs || [];
+        const logDates = logsList.map((l: any) => l.date);
+        
+        const streakData = calculateStreakWithFreezes(logDates);
+        setStreakInfo(streakData);
+        setMicroInsight(generateMicroInsight(logsList, activeQuestions || []));
 
         if (todayLog) {
           setLog(todayLog);
@@ -154,18 +168,22 @@ export default function Dashboard() {
 
       if (result.error) throw result.error;
 
-      // Play chime & haptic feedback on successful check-in
+      // Variable Rewards: Confetti burst, Audio Chime, Haptics, Quote
+      triggerVariableReward();
       playCompletionChime();
-      triggerHaptic(35);
+      triggerHaptic(40);
       updateAppBadge(0);
+      setMotivationalQuote(getRandomQuote());
 
-      // Refresh streaks
+      // Refresh streaks and micro-insights
       const { data: allLogs } = await supabase
         .from('daily_logs')
-        .select('date')
+        .select('*')
         .eq('user_id', user.id);
-      const logDates = allLogs?.map((l: any) => l.date) || [];
-      setStreak(calculateStreak(logDates));
+      const logsList = allLogs || [];
+      const logDates = logsList.map((l: any) => l.date);
+      setStreakInfo(calculateStreakWithFreezes(logDates));
+      setMicroInsight(generateMicroInsight(logsList, questions));
 
       setLog(result.data);
       setIsEditing(false);
@@ -188,39 +206,66 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Header reflection + Live Streak Badge */}
-      <div className="flex items-start justify-between">
+      {/* Header reflection + Live Streak & Streak Freeze Engine */}
+      <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center space-x-2 text-teal-405">
             <Sparkles className="w-4 h-4" />
             <span className="text-xs uppercase tracking-widest font-extrabold font-mono">Daily Check-in</span>
           </div>
           <h1 className="text-3xl font-extrabold text-zinc-50 tracking-tight">
-            {isEditing ? "Log Your Day" : "Daily Completed"}
+            {isEditing ? "Log Your Day" : "Day Complete 🎯"}
           </h1>
           <p className="text-sm text-zinc-400 leading-relaxed">
             {isEditing 
               ? "Take a moment to reflect on your habits, actions, and mindset."
-              : "Your entry is saved. Rest well and check in again tomorrow!"}
+              : "All habits logged. Take a breath and get back to real life!"}
           </p>
         </div>
 
-        {/* Dynamic Streak Badge */}
-        <div className="glass-panel px-3.5 py-2 rounded-2xl border border-amber-500/20 bg-amber-500/5 flex items-center space-x-2 shrink-0 shadow-md shadow-amber-950/10">
-          <Flame className="w-5 h-5 text-amber-400 animate-pulse" />
-          <div className="text-right">
-            <span className="block text-xs font-black text-amber-300 font-mono leading-none">
-              {streak.currentStreak} {streak.currentStreak === 1 ? 'DAY' : 'DAYS'}
-            </span>
-            <span className="text-[9px] text-amber-500/80 font-mono font-bold">STREAK</span>
+        {/* Dynamic Streak Badge & Grace Protection Indicator */}
+        <div className="flex flex-col items-end space-y-1.5 shrink-0">
+          <div className="glass-panel px-3.5 py-2 rounded-2xl border border-amber-500/20 bg-amber-500/5 flex items-center space-x-2 shadow-md shadow-amber-950/10">
+            <Flame className="w-5 h-5 text-amber-400 animate-pulse" />
+            <div className="text-right">
+              <span className="block text-xs font-black text-amber-300 font-mono leading-none">
+                {streakInfo.currentStreak} {streakInfo.currentStreak === 1 ? 'DAY' : 'DAYS'}
+              </span>
+              <span className="text-[9px] text-amber-500/80 font-mono font-bold">STREAK</span>
+            </div>
+          </div>
+
+          {/* Streak Freeze Grace Indicator */}
+          <div className="flex items-center space-x-1 text-[10px] font-mono text-zinc-500 bg-zinc-950 px-2 py-0.5 rounded-full border border-zinc-850">
+            <ShieldCheck className="w-3 h-3 text-teal-400" />
+            <span>{streakInfo.freezesRemaining} Freezes Left</span>
           </div>
         </div>
       </div>
 
+      {/* Adaptive Micro-Insight Banner */}
+      {microInsight && (
+        <div className="p-3.5 rounded-xl border border-teal-500/20 bg-teal-500/5 text-xs text-zinc-300 flex items-center space-x-2.5">
+          <Lightbulb className="w-4 h-4 text-teal-400 shrink-0" />
+          <span className="leading-snug">{microInsight}</span>
+        </div>
+      )}
+
+      {/* Milestone Unlock Notification Banner */}
+      {streakInfo.isMilestone && isEditing && (
+        <div className="p-4 rounded-xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 to-teal-500/10 text-amber-200 text-xs flex items-center space-x-3 shadow-lg animate-bounce">
+          <Award className="w-6 h-6 text-amber-400 shrink-0" />
+          <div>
+            <h4 className="font-extrabold text-sm text-amber-300">{streakInfo.milestoneTitle}</h4>
+            <p className="text-zinc-400 text-[11px] mt-0.5">Unpredictable reward unlocked! Keep your momentum chain unbroken.</p>
+          </div>
+        </div>
+      )}
+
       {/* Subscription Settings Banner */}
       <NotificationToggle />
 
-      {/* Main Form or Log Completed View */}
+      {/* Main Form or Artificial "Stopping Cue" Card */}
       {isEditing ? (
         <form onSubmit={handleSubmit} className="space-y-6">
           {questions.length === 0 ? (
@@ -251,7 +296,7 @@ export default function Dashboard() {
                       </label>
                     </div>
 
-                    {/* Boolean Selector */}
+                    {/* One-Tap Boolean Selector */}
                     {q.type === 'boolean' && (
                       <div className="flex space-x-3">
                         <button
@@ -357,29 +402,39 @@ export default function Dashboard() {
         </form>
       ) : (
         <div className="space-y-4 animate-fade-in">
-          <div className="glass-panel p-6 rounded-2xl border border-teal-500/15 bg-teal-500/5 flex flex-col items-center text-center space-y-3.5 shadow-md shadow-teal-900/5">
-            <CheckCircle className="w-12 h-12 text-teal-400" />
-            <div className="space-y-1">
-              <h3 className="text-lg font-bold text-zinc-200">Completed for Today</h3>
-              <p className="text-zinc-400 text-sm">
-                Responses for {new Date(log.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })} have been logged.
+          {/* Explicit "Day Complete" Stopping Cue Card */}
+          <div className="glass-panel p-6 rounded-2xl border border-teal-500/20 bg-gradient-to-b from-teal-500/10 to-transparent flex flex-col items-center text-center space-y-4 shadow-xl shadow-teal-950/20 relative overflow-hidden">
+            <div className="w-14 h-14 rounded-full bg-teal-500/15 border border-teal-500/30 flex items-center justify-center text-teal-400 shadow-inner">
+              <CheckCircle className="w-8 h-8" />
+            </div>
+            
+            <div className="space-y-1.5 max-w-md">
+              <span className="text-[10px] font-mono font-extrabold uppercase tracking-widest text-teal-400 bg-teal-500/10 px-2.5 py-0.5 rounded-full border border-teal-500/20">
+                Stopping Cue Activated
+              </span>
+              <h3 className="text-xl font-black text-zinc-100">Day Complete 🎯</h3>
+              <p className="text-zinc-300 text-xs leading-relaxed font-mono">
+                {motivationalQuote || "You've successfully completed today's reflection. Get back to real life!"}
               </p>
             </div>
-            <button
-              onClick={() => {
-                triggerHaptic(10);
-                setIsEditing(true);
-              }}
-              className="flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold bg-zinc-950 hover:bg-zinc-900 border border-zinc-850 hover:border-zinc-800 transition-all text-zinc-300 cursor-pointer shadow shadow-black/60"
-            >
-              <Edit3 className="w-3.5 h-3.5 text-zinc-450" />
-              <span>Modify Responses</span>
-            </button>
+
+            <div className="flex items-center space-x-3 pt-2">
+              <button
+                onClick={() => {
+                  triggerHaptic(10);
+                  setIsEditing(true);
+                }}
+                className="flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold bg-zinc-950 hover:bg-zinc-900 border border-zinc-850 hover:border-zinc-800 transition-all text-zinc-300 cursor-pointer shadow shadow-black/60"
+              >
+                <Edit3 className="w-3.5 h-3.5 text-zinc-450" />
+                <span>Modify Entry</span>
+              </button>
+            </div>
           </div>
 
           {/* Render read-only responses */}
           <div className="space-y-3">
-            <h4 className="text-xs font-bold text-zinc-550 uppercase tracking-widest pl-1 font-mono">Your Entry Summary</h4>
+            <h4 className="text-xs font-bold text-zinc-550 uppercase tracking-widest pl-1 font-mono">Your Saved Entries</h4>
             {questions.map((q) => {
               const val = answers[q.id];
               const IconComponent = IconMap[q.icon] || HelpCircle;
