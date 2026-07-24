@@ -51,7 +51,17 @@ export function getRandomQuote(): string {
   return MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)];
 }
 
-// 3. Audio Chime Synthesis (iOS AudioContext Resume Fix)
+// 3. Shuffle Array Utility
+export function shuffleArray<T>(array: T[]): T[] {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// 4. Audio Chime Synthesis (iOS AudioContext Resume Fix)
 export function playCompletionChime() {
   if (typeof window === 'undefined') return;
   const soundEnabled = localStorage.getItem('reflect_sound_enabled') !== 'false';
@@ -63,7 +73,6 @@ export function playCompletionChime() {
     
     const ctx = new AudioCtx();
     
-    // iOS Safari requires resuming AudioContext if suspended
     if (ctx.state === 'suspended') {
       ctx.resume().catch(() => {});
     }
@@ -98,7 +107,7 @@ export function playCompletionChime() {
   }
 }
 
-// 4. Mobile Haptics
+// 5. Mobile Haptics
 export function triggerHaptic(ms: number = 15) {
   if (typeof window !== 'undefined' && 'vibrate' in navigator) {
     const hapticsEnabled = localStorage.getItem('reflect_haptics_enabled') !== 'false';
@@ -110,7 +119,7 @@ export function triggerHaptic(ms: number = 15) {
   }
 }
 
-// 5. PWA App Badge
+// 6. PWA App Badge
 export function updateAppBadge(unreadCount: number) {
   if (typeof window !== 'undefined' && 'setAppBadge' in navigator) {
     try {
@@ -123,7 +132,7 @@ export function updateAppBadge(unreadCount: number) {
   }
 }
 
-// 6. Streak & Grace Days / Streak Freeze Engine
+// 7. Streak & Grace Days / Streak Freeze Engine
 export interface StreakInfo {
   currentStreak: number;
   bestStreak: number;

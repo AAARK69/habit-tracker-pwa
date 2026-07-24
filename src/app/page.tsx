@@ -8,7 +8,7 @@ import NotificationToggle from '@/components/NotificationToggle';
 import { 
   playCompletionChime, triggerHaptic, updateAppBadge, 
   triggerVariableReward, getRandomQuote, calculateStreakWithFreezes,
-  generateMicroInsight, StreakInfo
+  generateMicroInsight, StreakInfo, shuffleArray
 } from '@/lib/feedback';
 import { 
   calculateUserLevel, LevelInfo 
@@ -18,7 +18,7 @@ import {
   Brain, Flame, Heart, Coffee, ClipboardList, CheckSquare, 
   HelpCircle, CheckCircle, Edit3, Loader2, Check, X, 
   MessageSquare, ShieldCheck, Award, Lightbulb, Share2, 
-  Mic, MicOff, Trophy, PenTool, Activity
+  Mic, MicOff, Trophy, PenTool, Activity, Shuffle
 } from 'lucide-react';
 
 const IconMap: Record<string, any> = {
@@ -92,7 +92,14 @@ export default function Dashboard() {
           .order('order_index', { ascending: true });
 
         if (qError) throw qError;
-        setQuestions(activeQuestions || []);
+
+        let loadedQuestions = activeQuestions || [];
+        const isRandomized = localStorage.getItem('reflect_randomize_questions') === 'true';
+        if (isRandomized) {
+          loadedQuestions = shuffleArray(loadedQuestions);
+        }
+
+        setQuestions(loadedQuestions);
 
         const { data: todayLog, error: logError } = await supabase
           .from('daily_logs')
@@ -127,7 +134,7 @@ export default function Dashboard() {
           updateAppBadge(1);
           
           const initialAnswers: Record<string, any> = {};
-          activeQuestions?.forEach((q) => {
+          loadedQuestions?.forEach((q) => {
             if (q.type === 'boolean') initialAnswers[q.id] = null;
             else if (q.type === 'number') initialAnswers[q.id] = '';
             else if (q.type === 'scale_1_to_5') initialAnswers[q.id] = 3;
@@ -144,6 +151,11 @@ export default function Dashboard() {
 
     fetchData();
   }, [user]);
+
+  const handleShuffleQuestions = () => {
+    triggerHaptic(20);
+    setQuestions((prev) => shuffleArray(prev));
+  };
 
   const handleAnswerChange = (questionId: string, value: any) => {
     triggerHaptic(10);
@@ -486,6 +498,24 @@ export default function Dashboard() {
 
           {isEditing ? (
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Question Form Toolbar (Shuffle button) */}
+              {questions.length > 1 && (
+                <div className="flex items-center justify-between px-1">
+                  <span className="text-xs font-bold text-zinc-500 font-ios-mono uppercase tracking-widest">
+                    Questionnaire Prompts ({questions.length})
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleShuffleQuestions}
+                    style={{ color: 'var(--accent)', backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-border)' }}
+                    className="flex items-center space-x-1.5 text-xs font-ios-mono font-bold px-3 py-1.5 rounded-xl border hover:opacity-80 transition-opacity cursor-pointer shadow-sm"
+                  >
+                    <Shuffle className="w-3.5 h-3.5" />
+                    <span>Shuffle Order 🎲</span>
+                  </button>
+                </div>
+              )}
+
               {questions.length === 0 ? (
                 <div className="craft-card p-8 text-center space-y-3 border-zinc-800 bg-zinc-900/10">
                   <ClipboardList className="w-10 h-10 text-zinc-650 mx-auto" />

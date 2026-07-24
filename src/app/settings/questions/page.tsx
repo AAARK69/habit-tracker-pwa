@@ -9,7 +9,7 @@ import {
   Brain, Flame, Heart, Coffee, ClipboardList, CheckSquare, 
   HelpCircle, Plus, Trash2, Edit2, Check, X, ArrowUp, 
   ArrowDown, Eye, EyeOff, Loader2, Download, Palette, FileSpreadsheet, FileCode,
-  Volume2, VolumeX, Smartphone, Clock, RotateCcw
+  Volume2, VolumeX, Smartphone, Clock, RotateCcw, Shuffle
 } from 'lucide-react';
 
 const AVAILABLE_ICONS = [
@@ -54,6 +54,7 @@ export default function QuestionsSettings() {
   const [selectedTheme, setSelectedTheme] = useState('teal');
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [hapticsEnabled, setHapticsEnabled] = useState(true);
+  const [randomizeEnabled, setRandomizeEnabled] = useState(false);
   const [reminderTime, setReminderTime] = useState('22:00');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -84,11 +85,13 @@ export default function QuestionsSettings() {
     const savedTheme = localStorage.getItem('reflect_accent_theme') || 'teal';
     const savedSound = localStorage.getItem('reflect_sound_enabled') !== 'false';
     const savedHaptics = localStorage.getItem('reflect_haptics_enabled') !== 'false';
+    const savedRandomize = localStorage.getItem('reflect_randomize_questions') === 'true';
     const savedReminder = localStorage.getItem('reflect_reminder_time') || '22:00';
 
     setSelectedTheme(savedTheme);
     setSoundEnabled(savedSound);
     setHapticsEnabled(savedHaptics);
+    setRandomizeEnabled(savedRandomize);
     setReminderTime(savedReminder);
 
     document.documentElement.setAttribute('data-theme', savedTheme);
@@ -111,6 +114,12 @@ export default function QuestionsSettings() {
     const val = !hapticsEnabled;
     setHapticsEnabled(val);
     localStorage.setItem('reflect_haptics_enabled', String(val));
+  };
+
+  const handleToggleRandomize = () => {
+    const val = !randomizeEnabled;
+    setRandomizeEnabled(val);
+    localStorage.setItem('reflect_randomize_questions', String(val));
   };
 
   const handleReminderTimeChange = (time: string) => {
@@ -325,11 +334,11 @@ export default function QuestionsSettings() {
       <div className="space-y-1">
         <div className="flex items-center space-x-2">
           <CheckSquare className="w-4 h-4" style={{ color: 'var(--accent)' }} />
-          <span className="text-xs uppercase tracking-widest font-extrabold font-mono" style={{ color: 'var(--accent)' }}>
+          <span className="text-xs uppercase tracking-widest font-extrabold font-ios-mono" style={{ color: 'var(--accent)' }}>
             Journal Settings
           </span>
         </div>
-        <h1 className="text-3xl font-extrabold text-zinc-50 tracking-tight font-serif-journal">
+        <h1 className="text-3xl font-extrabold text-zinc-50 tracking-tight font-ios-serif">
           Settings & Preferences
         </h1>
         <p className="text-base text-zinc-400 font-handwritten text-xl leading-snug">
@@ -341,9 +350,9 @@ export default function QuestionsSettings() {
       <div className="craft-card p-5 space-y-3">
         <div className="flex items-center space-x-2">
           <Palette className="w-4 h-4" style={{ color: 'var(--accent)' }} />
-          <h2 className="text-sm font-bold text-zinc-300">UI Accent Color Themes</h2>
+          <h2 className="text-sm font-bold text-zinc-300 font-ios-sans">UI Accent Color Themes</h2>
         </div>
-        <div className="flex flex-wrap gap-2.5 pt-1">
+        <div className="flex flex-wrap gap-2.5 pt-1 font-ios-sans">
           {ACCENT_THEMES.map((t) => {
             const isSelected = selectedTheme === t.id;
             return (
@@ -371,18 +380,39 @@ export default function QuestionsSettings() {
 
       {/* App Feedback & Notification Preferences */}
       <div className="craft-card p-5 space-y-4">
-        <h2 className="text-sm font-bold text-zinc-300">
+        <h2 className="text-sm font-bold text-zinc-300 font-ios-sans">
           App Feedback & Preferences
         </h2>
 
         <div className="space-y-3">
+          {/* Randomize Prompt Order Toggle */}
+          <div className="flex items-center justify-between p-3 rounded-xl border border-zinc-850/80 bg-zinc-950/40">
+            <div className="flex items-center space-x-3">
+              <Shuffle className="w-4 h-4" style={{ color: 'var(--accent)' }} />
+              <div>
+                <span className="block text-xs font-bold text-zinc-200 font-ios-sans">Randomize Prompt Order 🎲</span>
+                <span className="text-[10px] text-zinc-500 font-ios-mono">Shuffle question sequence randomly on each daily check-in</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleToggleRandomize}
+              style={randomizeEnabled ? { backgroundColor: 'var(--accent-glow)', color: 'var(--accent)', borderColor: 'var(--accent-border)' } : {}}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
+                randomizeEnabled ? '' : 'bg-zinc-900 text-zinc-500 border-zinc-800'
+              }`}
+            >
+              {randomizeEnabled ? 'Enabled' : 'Disabled'}
+            </button>
+          </div>
+
           {/* Audio Chimes Toggle */}
           <div className="flex items-center justify-between p-3 rounded-xl border border-zinc-850/80 bg-zinc-950/40">
             <div className="flex items-center space-x-3">
-              {soundEnabled ? <Volume2 className="w-4 h-4 text-zinc-200" style={{ color: 'var(--accent)' }} /> : <VolumeX className="w-4 h-4 text-zinc-500" />}
+              {soundEnabled ? <Volume2 className="w-4 h-4" style={{ color: 'var(--accent)' }} /> : <VolumeX className="w-4 h-4 text-zinc-500" />}
               <div>
-                <span className="block text-xs font-bold text-zinc-200">Completion Chimes</span>
-                <span className="text-[10px] text-zinc-500 font-mono">Play web audio chord on check-in submission</span>
+                <span className="block text-xs font-bold text-zinc-200 font-ios-sans">Completion Chimes</span>
+                <span className="text-[10px] text-zinc-500 font-ios-mono">Play web audio chord on check-in submission</span>
               </div>
             </div>
             <button
@@ -402,8 +432,8 @@ export default function QuestionsSettings() {
             <div className="flex items-center space-x-3">
               <Smartphone className="w-4 h-4" style={{ color: 'var(--accent)' }} />
               <div>
-                <span className="block text-xs font-bold text-zinc-200">Haptic Vibrations</span>
-                <span className="text-[10px] text-zinc-500 font-mono">Tactile haptic feedback on mobile button taps</span>
+                <span className="block text-xs font-bold text-zinc-200 font-ios-sans">Haptic Vibrations</span>
+                <span className="text-[10px] text-zinc-500 font-ios-mono">Tactile haptic feedback on mobile button taps</span>
               </div>
             </div>
             <button
@@ -423,14 +453,14 @@ export default function QuestionsSettings() {
             <div className="flex items-center space-x-3">
               <Clock className="w-4 h-4" style={{ color: 'var(--accent)' }} />
               <div>
-                <span className="block text-xs font-bold text-zinc-200">Reminder Time Window</span>
-                <span className="text-[10px] text-zinc-500 font-mono">Target hour for daily push notifications</span>
+                <span className="block text-xs font-bold text-zinc-200 font-ios-sans">Reminder Time Window</span>
+                <span className="text-[10px] text-zinc-500 font-ios-mono">Target hour for daily push notifications</span>
               </div>
             </div>
             <select
               value={reminderTime}
               onChange={(e) => handleReminderTimeChange(e.target.value)}
-              className="px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-xs font-mono text-zinc-200 focus:outline-none cursor-pointer"
+              className="px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-xs font-ios-mono text-zinc-200 focus:outline-none cursor-pointer"
             >
               <option value="20:00">8:00 PM</option>
               <option value="21:00">9:00 PM</option>
@@ -445,7 +475,7 @@ export default function QuestionsSettings() {
       <div className="craft-card p-5 space-y-3">
         <div className="flex items-center space-x-2">
           <Download className="w-4 h-4" style={{ color: 'var(--accent)' }} />
-          <h2 className="text-sm font-bold text-zinc-300">Export Journal Data</h2>
+          <h2 className="text-sm font-bold text-zinc-300 font-ios-sans">Export Journal Data</h2>
         </div>
         <p className="text-xs text-zinc-400 leading-relaxed font-handwritten text-lg">
           Export your reflection entries for backup or offline review.
@@ -454,7 +484,7 @@ export default function QuestionsSettings() {
           <button
             onClick={() => handleExportData('csv')}
             disabled={exporting}
-            className="flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-zinc-950 border border-zinc-850 hover:border-zinc-700 text-zinc-200 transition-colors cursor-pointer disabled:opacity-50"
+            className="flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-zinc-950 border border-zinc-850 hover:border-zinc-700 text-zinc-200 transition-colors cursor-pointer disabled:opacity-50 font-ios-sans"
           >
             <FileSpreadsheet className="w-4 h-4" style={{ color: 'var(--accent)' }} />
             <span>Export CSV</span>
@@ -462,7 +492,7 @@ export default function QuestionsSettings() {
           <button
             onClick={() => handleExportData('json')}
             disabled={exporting}
-            className="flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-zinc-950 border border-zinc-850 hover:border-zinc-700 text-zinc-200 transition-colors cursor-pointer disabled:opacity-50"
+            className="flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-zinc-950 border border-zinc-850 hover:border-zinc-700 text-zinc-200 transition-colors cursor-pointer disabled:opacity-50 font-ios-sans"
           >
             <FileCode className="w-4 h-4" style={{ color: 'var(--accent)' }} />
             <span>Export JSON</span>
@@ -472,41 +502,41 @@ export default function QuestionsSettings() {
 
       {/* Add new question form */}
       <div className="craft-card p-5 space-y-4">
-        <h2 className="text-sm font-bold text-zinc-300">
+        <h2 className="text-sm font-bold text-zinc-300 font-ios-sans">
           Add Custom Journal Prompt
         </h2>
         <form onSubmit={handleAddQuestion} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="sm:col-span-2 space-y-1">
-              <label className="block text-xs font-semibold text-zinc-500 font-mono uppercase tracking-wider pl-0.5">Prompt text</label>
+              <label className="block text-xs font-semibold text-zinc-500 font-ios-mono uppercase tracking-wider pl-0.5">Prompt text</label>
               <input
                 type="text"
                 required
                 placeholder="e.g. Did you read at least 10 pages today?"
                 value={newPrompt}
                 onChange={(e) => setNewPrompt(e.target.value)}
-                className="w-full px-3 py-2.5 bg-zinc-950/65 border border-zinc-850 rounded-xl text-zinc-200 placeholder-zinc-650 focus:outline-none text-sm font-serif-journal"
+                className="w-full px-3 py-2.5 bg-zinc-950/65 border border-zinc-850 rounded-xl text-zinc-200 placeholder-zinc-650 focus:outline-none text-sm font-ios-serif"
               />
             </div>
 
             <div className="space-y-1">
-              <label className="block text-xs font-semibold text-zinc-500 font-mono uppercase tracking-wider pl-0.5">Answer format</label>
+              <label className="block text-xs font-semibold text-zinc-500 font-ios-mono uppercase tracking-wider pl-0.5">Answer format</label>
               <select
                 value={newType}
                 onChange={(e) => setNewType(e.target.value)}
-                className="w-full px-3 py-2.5 bg-zinc-950/65 border border-zinc-850 rounded-xl text-zinc-200 focus:outline-none text-sm cursor-pointer"
+                className="w-full px-3 py-2.5 bg-zinc-950/65 border border-zinc-850 rounded-xl text-zinc-200 focus:outline-none text-sm cursor-pointer font-ios-sans"
               >
                 <option value="boolean">Yes / No</option>
                 <option value="number">Numeric Count</option>
                 <option value="scale_1_to_5">1 - 5 Scale Rating</option>
-                <option value="text">Written reflection</option>
+                <option value="text">Reflection text</option>
               </select>
             </div>
           </div>
 
           {/* Icon Selector Grid */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-semibold text-zinc-500 font-mono uppercase tracking-wider pl-0.5">Choose Icon</label>
+            <label className="block text-xs font-semibold text-zinc-500 font-ios-mono uppercase tracking-wider pl-0.5">Choose Icon</label>
             <div className="grid grid-cols-6 gap-2 bg-zinc-950/30 p-3 rounded-xl border border-zinc-850/60 max-w-md">
               {AVAILABLE_ICONS.map((item) => {
                 const Icon = item.icon;
@@ -535,7 +565,7 @@ export default function QuestionsSettings() {
             type="submit"
             disabled={saving}
             style={{ background: 'var(--accent-gradient)', color: '#09090b' }}
-            className="glow-btn px-4 py-2.5 font-bold text-sm rounded-xl hover:opacity-95 shadow transition-opacity flex justify-center items-center space-x-1 cursor-pointer w-full sm:w-auto"
+            className="glow-btn px-4 py-2.5 font-bold text-sm rounded-xl hover:opacity-95 shadow transition-opacity flex justify-center items-center space-x-1 cursor-pointer w-full sm:w-auto font-ios-sans"
           >
             <Plus className="w-4 h-4" />
             <span className="font-handwritten text-lg font-bold">Create Prompt ✒️</span>
@@ -546,14 +576,14 @@ export default function QuestionsSettings() {
       {/* List of current questions */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-xs font-bold text-zinc-550 uppercase tracking-widest pl-1 font-mono">
+          <h2 className="text-xs font-bold text-zinc-550 uppercase tracking-widest pl-1 font-ios-mono">
             Your Questionnaire Prompts
           </h2>
 
           <button
             type="button"
             onClick={handleResetDefaults}
-            className="flex items-center space-x-1 text-[10px] font-mono text-zinc-450 hover:text-zinc-200 transition-colors cursor-pointer"
+            className="flex items-center space-x-1 text-[10px] font-ios-mono text-zinc-450 hover:text-zinc-200 transition-colors cursor-pointer"
           >
             <RotateCcw className="w-3 h-3" />
             <span>Restore Defaults</span>
@@ -618,8 +648,8 @@ export default function QuestionsSettings() {
                           <IconComponent className="w-4.5 h-4.5" />
                         </div>
                         <div className="space-y-1">
-                          <p className="text-sm font-bold text-zinc-200 leading-snug font-serif-journal">{q.prompt}</p>
-                          <span className="inline-block px-2 py-0.5 bg-zinc-950/80 border border-zinc-900 rounded text-[10px] text-zinc-500 font-mono">
+                          <p className="text-sm font-bold text-zinc-200 leading-snug font-ios-serif">{q.prompt}</p>
+                          <span className="inline-block px-2 py-0.5 bg-zinc-950/80 border border-zinc-900 rounded text-[10px] text-zinc-500 font-ios-mono">
                             {typeLabels[q.type]}
                           </span>
                         </div>
@@ -629,7 +659,7 @@ export default function QuestionsSettings() {
 
                   {/* Actions toolbar */}
                   {!isEditingThis && (
-                    <div className="flex items-center justify-end space-x-1 shrink-0 self-end sm:self-auto">
+                    <div className="flex items-center justify-end space-x-1 shrink-0 self-end sm:self-auto font-ios-sans">
                       <button
                         onClick={() => handleMove(idx, 'up')}
                         disabled={idx === 0}
