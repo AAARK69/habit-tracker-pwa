@@ -17,7 +17,6 @@ export function triggerVariableReward() {
     });
   }
 
-  // Randomize particle styles for unexpected variable rewards
   const styles = [
     () => {
       fire(0.25, { spread: 26, startVelocity: 55, colors: ['#2dd4bf', '#34d399', '#38bdf8'] });
@@ -52,9 +51,12 @@ export function getRandomQuote(): string {
   return MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)];
 }
 
-// 3. Audio Chime Synthesis
+// 3. Audio Chime Synthesis (Respects Sound Preference)
 export function playCompletionChime() {
   if (typeof window === 'undefined') return;
+  const soundEnabled = localStorage.getItem('reflect_sound_enabled') !== 'false';
+  if (!soundEnabled) return;
+
   try {
     const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
     if (!AudioCtx) return;
@@ -90,9 +92,12 @@ export function playCompletionChime() {
   }
 }
 
-// 4. Mobile Haptics
+// 4. Mobile Haptics (Respects Haptics Preference)
 export function triggerHaptic(ms: number = 15) {
   if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+    const hapticsEnabled = localStorage.getItem('reflect_haptics_enabled') !== 'false';
+    if (!hapticsEnabled) return;
+
     try {
       navigator.vibrate(ms);
     } catch {}
@@ -134,7 +139,7 @@ export function calculateStreakWithFreezes(dates: string[]): StreakInfo {
   const todayStr = getTodayStr();
   const yesterdayStr = getYesterdayStr();
 
-  let freezesRemaining = 2; // 2 Grace Freezes per month allowance
+  let freezesRemaining = 2;
   let freezesUsedThisMonth = 0;
   let freezeAppliedToday = false;
   let currentStreak = 0;
@@ -196,7 +201,6 @@ export function calculateStreakWithFreezes(dates: string[]): StreakInfo {
   }
   if (tempStreak > bestStreak) bestStreak = tempStreak;
 
-  // Unpredictable milestone recognition (3, 5, 7, 10, 14, 21, 30 days)
   const milestoneList = [3, 5, 7, 10, 14, 21, 30, 50, 100];
   const isMilestone = milestoneList.includes(currentStreak);
   let milestoneTitle = isMilestone ? `${currentStreak}-Day Milestone Unlocked! 🎉` : undefined;
@@ -221,14 +225,14 @@ function getYesterdayStr() {
 }
 
 function getNDaysAgoStr(n: number) {
-  return formatDateObj(new Date(Date.now() - n * 86400000));
+  const d = new Date(Date.now() - n * 86400000);
+  return formatDateObj(d);
 }
 
 function formatDateObj(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-// 7. Personalized Adaptive Micro-Insights Generator
 export function generateMicroInsight(logs: any[], questions: any[]): string {
   if (!logs || logs.length === 0) {
     return "Complete daily check-ins to build personalized productivity insights!";

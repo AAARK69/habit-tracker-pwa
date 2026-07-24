@@ -8,7 +8,8 @@ import {
   Dumbbell, Bed, Smile, Sparkles, BookOpen, GlassWater, 
   Brain, Flame, Heart, Coffee, ClipboardList, CheckSquare, 
   HelpCircle, Plus, Trash2, Edit2, Check, X, ArrowUp, 
-  ArrowDown, Eye, EyeOff, Loader2, Download, Palette, FileSpreadsheet, FileCode
+  ArrowDown, Eye, EyeOff, Loader2, Download, Palette, FileSpreadsheet, FileCode,
+  Volume2, VolumeX, Smartphone, Clock, ShieldAlert, RotateCcw
 } from 'lucide-react';
 
 const AVAILABLE_ICONS = [
@@ -51,6 +52,9 @@ export default function QuestionsSettings() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingPrompt, setEditingPrompt] = useState('');
   const [selectedTheme, setSelectedTheme] = useState('teal');
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [hapticsEnabled, setHapticsEnabled] = useState(true);
+  const [reminderTime, setReminderTime] = useState('22:00');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -76,8 +80,17 @@ export default function QuestionsSettings() {
 
   useEffect(() => {
     fetchQuestions();
+    
+    // Load client preferences from localStorage
     const savedTheme = localStorage.getItem('reflect_accent_theme') || 'teal';
+    const savedSound = localStorage.getItem('reflect_sound_enabled') !== 'false';
+    const savedHaptics = localStorage.getItem('reflect_haptics_enabled') !== 'false';
+    const savedReminder = localStorage.getItem('reflect_reminder_time') || '22:00';
+
     setSelectedTheme(savedTheme);
+    setSoundEnabled(savedSound);
+    setHapticsEnabled(savedHaptics);
+    setReminderTime(savedReminder);
   }, [user]);
 
   const handleSelectTheme = (themeId: string) => {
@@ -85,7 +98,48 @@ export default function QuestionsSettings() {
     localStorage.setItem('reflect_accent_theme', themeId);
   };
 
-  // CSV & JSON Data Export Handler
+  const handleToggleSound = () => {
+    const val = !soundEnabled;
+    setSoundEnabled(val);
+    localStorage.setItem('reflect_sound_enabled', String(val));
+  };
+
+  const handleToggleHaptics = () => {
+    const val = !hapticsEnabled;
+    setHapticsEnabled(val);
+    localStorage.setItem('reflect_haptics_enabled', String(val));
+  };
+
+  const handleReminderTimeChange = (time: string) => {
+    setReminderTime(time);
+    localStorage.setItem('reflect_reminder_time', time);
+  };
+
+  // Reset Default Questions Handler
+  const handleResetDefaults = async () => {
+    if (!user) return;
+    if (!confirm('Restore default habit prompts? Existing custom prompts will remain untouched.')) return;
+    setSaving(true);
+
+    try {
+      const defaultPrompts = [
+        { user_id: user.id, prompt: 'Did you exercise today?', type: 'boolean', order_index: 0, icon: 'dumbbell' },
+        { user_id: user.id, prompt: 'Hours of sleep last night', type: 'number', order_index: 1, icon: 'bed' },
+        { user_id: user.id, prompt: 'Overall mood today', type: 'scale_1_to_5', order_index: 2, icon: 'smile' },
+        { user_id: user.id, prompt: 'What was the highlight of your day?', type: 'text', order_index: 3, icon: 'sparkles' },
+      ];
+
+      const { error } = await supabase.from('questions').insert(defaultPrompts);
+      if (error) throw error;
+      await fetchQuestions();
+    } catch (err: any) {
+      alert('Failed to reset defaults: ' + err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Export Data Handler
   const handleExportData = async (format: 'csv' | 'json') => {
     if (!user) return;
     setExporting(true);
@@ -109,7 +163,6 @@ export default function QuestionsSettings() {
         a.click();
         URL.revokeObjectURL(url);
       } else {
-        // CSV Format
         let csv = 'ID,Date,Responses,CreatedAt\n';
         logs?.forEach((l) => {
           const respStr = JSON.stringify(l.responses).replace(/"/g, '""');
@@ -259,11 +312,81 @@ export default function QuestionsSettings() {
           <span className="text-xs uppercase tracking-widest font-extrabold font-mono">Customization & Privacy</span>
         </div>
         <h1 className="text-3xl font-extrabold text-zinc-50 tracking-tight">
-          Settings & Customization
+          Settings & Preferences
         </h1>
         <p className="text-sm text-zinc-400">
-          Manage habits, customize UI accent themes, and export your private reflection journal.
+          Configure app preferences, customize prompts, switch themes, and manage data.
         </p>
+      </div>
+
+      {/* App Feedback & Notification Preferences */}
+      <div className="glass-panel p-5 rounded-2xl border border-zinc-850 bg-zinc-900/10 space-y-4">
+        <h2 className="text-sm font-bold text-zinc-300">
+          App Feedback & Preferences
+        </h2>
+
+        <div className="space-y-3">
+          {/* Audio Chimes Toggle */}
+          <div className="flex items-center justify-between p-3 rounded-xl border border-zinc-850/80 bg-zinc-950/40">
+            <div className="flex items-center space-x-3">
+              {soundEnabled ? <Volume2 className="w-4 h-4 text-teal-400" /> : <VolumeX className="w-4 h-4 text-zinc-500" />}
+              <div>
+                <span className="block text-xs font-bold text-zinc-200">Completion Chimes</span>
+                <span className="text-[10px] text-zinc-500">Play web audio chord on check-in submission</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleToggleSound}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
+                soundEnabled ? 'bg-teal-500/10 text-teal-400 border-teal-500/30' : 'bg-zinc-900 text-zinc-500 border-zinc-800'
+              }`}
+            >
+              {soundEnabled ? 'Enabled' : 'Disabled'}
+            </button>
+          </div>
+
+          {/* Haptics Toggle */}
+          <div className="flex items-center justify-between p-3 rounded-xl border border-zinc-850/80 bg-zinc-950/40">
+            <div className="flex items-center space-x-3">
+              <Smartphone className="w-4 h-4 text-teal-400" />
+              <div>
+                <span className="block text-xs font-bold text-zinc-200">Haptic Vibrations</span>
+                <span className="text-[10px] text-zinc-500">Tactile haptic feedback on mobile button taps</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleToggleHaptics}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
+                hapticsEnabled ? 'bg-teal-500/10 text-teal-400 border-teal-500/30' : 'bg-zinc-900 text-zinc-500 border-zinc-800'
+              }`}
+            >
+              {hapticsEnabled ? 'Enabled' : 'Disabled'}
+            </button>
+          </div>
+
+          {/* Target Reminder Hour Picker */}
+          <div className="flex items-center justify-between p-3 rounded-xl border border-zinc-850/80 bg-zinc-950/40">
+            <div className="flex items-center space-x-3">
+              <Clock className="w-4 h-4 text-teal-400" />
+              <div>
+                <span className="block text-xs font-bold text-zinc-200">Reminder Time Window</span>
+                <span className="text-[10px] text-zinc-500">Target hour for daily push notifications</span>
+              </div>
+            </div>
+            <select
+              value={reminderTime}
+              onChange={(e) => handleReminderTimeChange(e.target.value)}
+              className="px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-xs font-mono text-zinc-200 focus:outline-none focus:ring-1 focus:ring-teal-450 cursor-pointer"
+            >
+              <option value="20:00">8:00 PM</option>
+              <option value="21:00">9:00 PM</option>
+              <option value="22:00">10:00 PM (Default)</option>
+              <option value="23:00">11:00 PM</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       {/* Theme Accent Switcher */}
@@ -399,9 +522,20 @@ export default function QuestionsSettings() {
 
       {/* List of current questions */}
       <div className="space-y-3">
-        <h2 className="text-xs font-bold text-zinc-550 uppercase tracking-widest pl-1 font-mono">
-          Your Questionnaire Prompts
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-xs font-bold text-zinc-550 uppercase tracking-widest pl-1 font-mono">
+            Your Questionnaire Prompts
+          </h2>
+
+          <button
+            type="button"
+            onClick={handleResetDefaults}
+            className="flex items-center space-x-1 text-[10px] font-mono text-zinc-450 hover:text-teal-400 transition-colors cursor-pointer"
+          >
+            <RotateCcw className="w-3 h-3" />
+            <span>Restore Defaults</span>
+          </button>
+        </div>
 
         {questions.length === 0 ? (
           <div className="glass-panel p-6 rounded-2xl text-center border-zinc-850 text-zinc-450 text-sm">
