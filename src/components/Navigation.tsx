@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDeviceLayout, LayoutMode } from '@/contexts/DeviceLayoutContext';
-import { ClipboardList, History, Settings, LogOut, Smartphone, Monitor, Zap } from 'lucide-react';
+import { ClipboardList, History, Settings, LogOut, Smartphone, Monitor, Zap, BarChart3 } from 'lucide-react';
 
 export default function Navigation({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -18,6 +18,7 @@ export default function Navigation({ children }: { children: React.ReactNode }) 
   const navItems = [
     { href: '/', label: 'Track', icon: ClipboardList },
     { href: '/history', label: 'History', icon: History },
+    { href: '/charts', label: 'Charts', icon: BarChart3 },
     { href: '/settings/questions', label: 'Settings', icon: Settings },
   ];
 
