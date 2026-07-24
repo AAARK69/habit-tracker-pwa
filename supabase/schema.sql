@@ -6,8 +6,12 @@ CREATE TABLE IF NOT EXISTS public.questions (
     type TEXT NOT NULL CHECK (type IN ('boolean', 'number', 'text', 'scale_1_to_5')),
     order_index INTEGER NOT NULL DEFAULT 0,
     is_active BOOLEAN NOT NULL DEFAULT true,
+    icon TEXT NOT NULL DEFAULT 'help-circle',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+-- Migration query in case table already exists
+ALTER TABLE public.questions ADD COLUMN IF NOT EXISTS icon TEXT NOT NULL DEFAULT 'help-circle';
 
 -- Create Daily Logs Table (responses stored in JSONB)
 CREATE TABLE IF NOT EXISTS public.daily_logs (
@@ -37,6 +41,7 @@ ALTER TABLE public.daily_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.push_subscriptions ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for questions
+DROP POLICY IF EXISTS "Users can manage their own questions" ON public.questions;
 CREATE POLICY "Users can manage their own questions"
     ON public.questions
     FOR ALL
@@ -45,6 +50,7 @@ CREATE POLICY "Users can manage their own questions"
     WITH CHECK (auth.uid() = user_id);
 
 -- RLS Policies for daily_logs
+DROP POLICY IF EXISTS "Users can manage their own daily logs" ON public.daily_logs;
 CREATE POLICY "Users can manage their own daily logs"
     ON public.daily_logs
     FOR ALL
@@ -53,6 +59,7 @@ CREATE POLICY "Users can manage their own daily logs"
     WITH CHECK (auth.uid() = user_id);
 
 -- RLS Policies for push_subscriptions
+DROP POLICY IF EXISTS "Users can manage their own subscriptions" ON public.push_subscriptions;
 CREATE POLICY "Users can manage their own subscriptions"
     ON public.push_subscriptions
     FOR ALL
@@ -64,17 +71,18 @@ CREATE POLICY "Users can manage their own subscriptions"
 CREATE OR REPLACE FUNCTION public.handle_new_user_setup()
 RETURNS trigger AS $$
 BEGIN
-    INSERT INTO public.questions (user_id, prompt, type, order_index)
+    INSERT INTO public.questions (user_id, prompt, type, order_index, icon)
     VALUES
-        (new.id, 'Did you exercise today?', 'boolean', 0),
-        (new.id, 'Hours of sleep last night', 'number', 1),
-        (new.id, 'Overall mood today', 'scale_1_to_5', 2),
-        (new.id, 'What was the highlight of your day?', 'text', 3);
+        (new.id, 'Did you exercise today?', 'boolean', 0, 'dumbbell'),
+        (new.id, 'Hours of sleep last night', 'number', 1, 'bed'),
+        (new.id, 'Overall mood today', 'scale_1_to_5', 2, 'smile'),
+        (new.id, 'What was the highlight of your day?', 'text', 3, 'sparkles');
     RETURN new;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Trigger to seed questions on sign up
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE OR REPLACE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_setup();

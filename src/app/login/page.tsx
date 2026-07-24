@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import { Mail, Lock, Loader2 } from 'lucide-react';
+import { Mail, Lock, Loader2, AlertTriangle } from 'lucide-react';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -13,6 +13,12 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const router = useRouter();
+
+  const isPlaceholder = 
+    !process.env.NEXT_PUBLIC_SUPABASE_URL || 
+    process.env.NEXT_PUBLIC_SUPABASE_URL.includes('placeholder') ||
+    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.includes('placeholder-anon-key');
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,7 +36,7 @@ export default function LoginPage() {
         if (error) {
           setError(error.message);
         } else {
-          setMessage('Sign-up successful! You can now log in using your credentials.');
+          setMessage('Sign-up successful! If email confirmation is enabled in your Supabase dashboard, check your inbox to confirm your account. Otherwise, you can log in now.');
           setIsSignUp(false); // Switch to sign-in so they can log in
         }
       } else {
@@ -67,6 +73,16 @@ export default function LoginPage() {
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        {isPlaceholder && (
+          <div className="mb-4 p-4 rounded-xl border border-amber-500/25 bg-amber-500/5 text-amber-200 text-xs flex items-start space-x-2.5 shadow-md">
+            <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+            <div className="leading-normal">
+              <span className="font-bold block mb-0.5">Configuration Required</span>
+              Your Supabase keys are not configured yet. Please copy the credentials into the <code className="bg-black/40 px-1 py-0.5 rounded font-mono border border-zinc-800">.env.local</code> file in your project root, then restart your dev server.
+            </div>
+          </div>
+        )}
+
         <div className="glass-panel p-8 rounded-2xl shadow-xl shadow-black/60 border border-zinc-800/80">
           {error && (
             <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg text-sm">

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseAdmin } from '@/lib/supabase';
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,8 +12,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const adminClient = getSupabaseAdmin();
+
     // Fetch existing subscriptions for this user to check for duplicate endpoints
-    const { data: existingSubs, error: fetchError } = await supabase
+    const { data: existingSubs, error: fetchError } = await adminClient
       .from('push_subscriptions')
       .select('id, subscription')
       .eq('user_id', user_id);
@@ -30,8 +32,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, message: 'Subscription already registered' }, { status: 200 });
     }
 
-    // Insert new subscription
-    const { error: insertError } = await supabase
+    // Insert new subscription using admin client to bypass RLS policies on server context
+    const { error: insertError } = await adminClient
       .from('push_subscriptions')
       .insert({
         user_id,
@@ -59,8 +61,10 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
+    const adminClient = getSupabaseAdmin();
+
     // Fetch subscriptions
-    const { data: existingSubs, error: fetchError } = await supabase
+    const { data: existingSubs, error: fetchError } = await adminClient
       .from('push_subscriptions')
       .select('id, subscription')
       .eq('user_id', user_id);
@@ -78,8 +82,8 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ success: true, message: 'Subscription not found, nothing to delete' }, { status: 200 });
     }
 
-    // Delete from Supabase
-    const { error: deleteError } = await supabase
+    // Delete from Supabase using admin client to bypass RLS
+    const { error: deleteError } = await adminClient
       .from('push_subscriptions')
       .delete()
       .eq('id', recordToDelete.id);

@@ -4,15 +4,50 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { 
-  Plus, Trash2, Edit2, Check, X, ArrowUp, ArrowDown, 
-  HelpCircle, Eye, EyeOff, Loader2, Sparkles 
+  Dumbbell, Bed, Smile, Sparkles, BookOpen, GlassWater, 
+  Brain, Flame, Heart, Coffee, ClipboardList, CheckSquare, 
+  HelpCircle, Plus, Trash2, Edit2, Check, X, ArrowUp, 
+  ArrowDown, Eye, EyeOff, Loader2
 } from 'lucide-react';
+
+// Available icons to choose from
+const AVAILABLE_ICONS = [
+  { name: 'dumbbell', label: 'Exercise', icon: Dumbbell },
+  { name: 'bed', label: 'Sleep', icon: Bed },
+  { name: 'smile', label: 'Mood', icon: Smile },
+  { name: 'sparkles', label: 'Highlight', icon: Sparkles },
+  { name: 'book-open', label: 'Reading', icon: BookOpen },
+  { name: 'glass-water', label: 'Hydration', icon: GlassWater },
+  { name: 'brain', label: 'Mindfulness', icon: Brain },
+  { name: 'flame', label: 'Energy', icon: Flame },
+  { name: 'heart', label: 'Health', icon: Heart },
+  { name: 'coffee', label: 'Caffeine', icon: Coffee },
+  { name: 'clipboard-list', label: 'General', icon: ClipboardList },
+  { name: 'check-square', label: 'Habit', icon: CheckSquare },
+];
+
+const IconMap: Record<string, any> = {
+  'dumbbell': Dumbbell,
+  'bed': Bed,
+  'smile': Smile,
+  'sparkles': Sparkles,
+  'book-open': BookOpen,
+  'glass-water': GlassWater,
+  'brain': Brain,
+  'flame': Flame,
+  'heart': Heart,
+  'coffee': Coffee,
+  'clipboard-list': ClipboardList,
+  'check-square': CheckSquare,
+  'help-circle': HelpCircle
+};
 
 export default function QuestionsSettings() {
   const { user, loading: authLoading } = useAuth();
   const [questions, setQuestions] = useState<any[]>([]);
   const [newPrompt, setNewPrompt] = useState('');
   const [newType, setNewType] = useState('boolean');
+  const [newIcon, setNewIcon] = useState('check-square');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingPrompt, setEditingPrompt] = useState('');
   const [loading, setLoading] = useState(true);
@@ -57,11 +92,13 @@ export default function QuestionsSettings() {
           type: newType,
           order_index: maxIndex + 1,
           is_active: true,
+          icon: newIcon,
         });
 
       if (error) throw error;
 
       setNewPrompt('');
+      setNewIcon('check-square');
       await fetchQuestions();
     } catch (err: any) {
       alert('Failed to add question: ' + err.message);
@@ -133,7 +170,6 @@ export default function QuestionsSettings() {
     const q2 = questions[targetIndex];
 
     try {
-      // Swap order indices in database
       const { error: err1 } = await supabase
         .from('questions')
         .update({ order_index: q2.order_index })
@@ -165,74 +201,104 @@ export default function QuestionsSettings() {
       {/* Header */}
       <div className="space-y-1">
         <div className="flex items-center space-x-2 text-teal-400">
-          <Sparkles className="w-4 h-4" />
-          <span className="text-xs uppercase tracking-widest font-bold">Customization</span>
+          <CheckSquare className="w-4 h-4" />
+          <span className="text-xs uppercase tracking-widest font-extrabold font-mono">Customization</span>
         </div>
-        <h1 className="text-2xl font-extrabold text-zinc-100 tracking-tight sm:text-3xl">
-          Question Engine Settings
+        <h1 className="text-3xl font-extrabold text-zinc-50 tracking-tight">
+          Question Settings
         </h1>
         <p className="text-sm text-zinc-400">
-          Add, reorder, edit, or disable questions to design your perfect habits tracker.
+          Add, reorder, edit, or disable questions to design your perfect daily reflection.
         </p>
       </div>
 
       {/* Add new question form */}
-      <div className="glass-panel p-5 rounded-2xl border border-zinc-800 bg-zinc-900/10">
-        <h2 className="text-sm font-bold text-zinc-300 mb-3 pl-0.5 flex items-center space-x-1">
-          <span>Add Custom Prompt</span>
+      <div className="glass-panel p-5 rounded-2xl border border-zinc-850 bg-zinc-900/10 space-y-4">
+        <h2 className="text-sm font-bold text-zinc-300">
+          Add Custom Prompt
         </h2>
-        <form onSubmit={handleAddQuestion} className="space-y-4 sm:space-y-0 sm:flex sm:space-x-3 items-end">
-          <div className="flex-1 space-y-1">
-            <input
-              type="text"
-              required
-              placeholder="e.g. Did you read at least 10 pages today?"
-              value={newPrompt}
-              onChange={(e) => setNewPrompt(e.target.value)}
-              className="w-full px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-200 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-teal-450 focus:border-teal-450 text-sm"
-            />
+        <form onSubmit={handleAddQuestion} className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="sm:col-span-2 space-y-1">
+              <label className="block text-xs font-semibold text-zinc-500 font-mono uppercase tracking-wider pl-0.5">Question Prompt text</label>
+              <input
+                type="text"
+                required
+                placeholder="e.g. Did you read at least 10 pages today?"
+                value={newPrompt}
+                onChange={(e) => setNewPrompt(e.target.value)}
+                className="w-full px-3 py-2.5 bg-zinc-950/65 border border-zinc-850 rounded-xl text-zinc-200 placeholder-zinc-650 focus:outline-none focus:ring-1 focus:ring-teal-450 focus:border-teal-450 text-sm"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="block text-xs font-semibold text-zinc-500 font-mono uppercase tracking-wider pl-0.5">Answer format</label>
+              <select
+                value={newType}
+                onChange={(e) => setNewType(e.target.value)}
+                className="w-full px-3 py-2.5 bg-zinc-950/65 border border-zinc-850 rounded-xl text-zinc-200 focus:outline-none focus:ring-1 focus:ring-teal-450 focus:border-teal-450 text-sm cursor-pointer"
+              >
+                <option value="boolean">Yes / No</option>
+                <option value="number">Numeric Count</option>
+                <option value="scale_1_to_5">1 - 5 Scale Rating</option>
+                <option value="text">Written reflection</option>
+              </select>
+            </div>
           </div>
 
-          <div className="sm:w-44 space-y-1">
-            <select
-              value={newType}
-              onChange={(e) => setNewType(e.target.value)}
-              className="w-full px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-200 focus:outline-none focus:ring-1 focus:ring-teal-450 focus:border-teal-450 text-sm cursor-pointer"
-            >
-              <option value="boolean">Yes / No</option>
-              <option value="number">Numeric Count</option>
-              <option value="scale_1_to_5">1 - 5 Scale Rating</option>
-              <option value="text">Written reflection</option>
-            </select>
+          {/* Icon Selector Grid */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold text-zinc-500 font-mono uppercase tracking-wider pl-0.5">Choose Icon</label>
+            <div className="grid grid-cols-6 gap-2 bg-zinc-950/30 p-3 rounded-xl border border-zinc-850/60 max-w-md">
+              {AVAILABLE_ICONS.map((item) => {
+                const Icon = item.icon;
+                const isSelected = newIcon === item.name;
+                return (
+                  <button
+                    key={item.name}
+                    type="button"
+                    onClick={() => setNewIcon(item.name)}
+                    className={`p-2.5 rounded-lg border transition-all flex items-center justify-center cursor-pointer ${
+                      isSelected
+                        ? 'bg-teal-500/10 border-teal-500/35 text-teal-450 scale-105'
+                        : 'bg-zinc-950/20 border-transparent text-zinc-500 hover:text-zinc-350 hover:bg-zinc-900/60'
+                    }`}
+                    title={item.label}
+                  >
+                    <Icon className="w-4.5 h-4.5" />
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <button
             type="submit"
             disabled={saving}
-            className="glow-btn px-4 py-2 bg-gradient-to-r from-teal-400 to-emerald-400 text-black font-semibold text-sm rounded-lg hover:opacity-95 shadow shadow-teal-500/10 transition-opacity flex justify-center items-center space-x-1 cursor-pointer w-full sm:w-auto shrink-0 h-10"
+            className="glow-btn px-4 py-2.5 bg-gradient-to-r from-teal-400 to-emerald-400 text-zinc-950 font-bold text-sm rounded-xl hover:opacity-95 shadow shadow-teal-500/10 transition-opacity flex justify-center items-center space-x-1 cursor-pointer w-full sm:w-auto"
           >
-            <Plus className="w-4 h-4 text-black" />
-            <span>Add</span>
+            <Plus className="w-4 h-4 text-zinc-950" />
+            <span>Create Prompt</span>
           </button>
         </form>
       </div>
 
       {/* List of current questions */}
       <div className="space-y-3">
-        <h2 className="text-xs font-bold text-zinc-500 uppercase tracking-wider pl-1">
-          Active & Inactive Prompts
+        <h2 className="text-xs font-bold text-zinc-550 uppercase tracking-widest pl-1 font-mono">
+          Your Questionnaire Prompts
         </h2>
 
         {questions.length === 0 ? (
-          <div className="glass-panel p-6 rounded-2xl text-center border-zinc-800 text-zinc-400 text-sm">
-            You don't have any tracking prompts yet. Add one above!
+          <div className="glass-panel p-6 rounded-2xl text-center border-zinc-850 text-zinc-450 text-sm">
+            You don't have any prompts yet. Add one using the panel above!
           </div>
         ) : (
-          <div className="space-y-2.5">
+          <div className="space-y-3">
             {questions.map((q, idx) => {
               const isEditingThis = editingId === q.id;
+              const IconComponent = IconMap[q.icon] || HelpCircle;
               
-              // Readable types mapping
               const typeLabels: Record<string, string> = {
                 boolean: 'Yes/No',
                 number: 'Number',
@@ -245,8 +311,8 @@ export default function QuestionsSettings() {
                   key={q.id} 
                   className={`glass-panel p-4 rounded-xl border transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
                     q.is_active 
-                      ? 'border-zinc-800 bg-zinc-900/10' 
-                      : 'border-zinc-800/40 bg-zinc-950/40 opacity-60'
+                      ? 'border-zinc-850 bg-zinc-900/10' 
+                      : 'border-zinc-850/40 bg-zinc-950/40 opacity-55'
                   }`}
                 >
                   <div className="flex-1 space-y-1">
@@ -256,7 +322,7 @@ export default function QuestionsSettings() {
                           type="text"
                           value={editingPrompt}
                           onChange={(e) => setEditingPrompt(e.target.value)}
-                          className="flex-1 px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200 focus:outline-none focus:ring-1 focus:ring-teal-450 focus:border-teal-450 text-sm"
+                          className="flex-1 px-3 py-1.5 bg-zinc-950 border border-zinc-850 rounded-xl text-zinc-200 focus:outline-none focus:ring-1 focus:ring-teal-450 focus:border-teal-450 text-sm font-medium"
                         />
                         <button
                           onClick={() => handleSaveEdit(q.id)}
@@ -267,20 +333,20 @@ export default function QuestionsSettings() {
                         </button>
                         <button
                           onClick={() => setEditingId(null)}
-                          className="p-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-450 rounded-lg cursor-pointer transition-colors"
+                          className="p-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-850 text-zinc-450 rounded-lg cursor-pointer transition-colors"
                           title="Cancel"
                         >
                           <X className="w-4 h-4" />
                         </button>
                       </div>
                     ) : (
-                      <div className="flex items-start space-x-2.5">
-                        <span className="text-zinc-500 text-xs font-mono mt-0.5 font-bold">
-                          #{idx + 1}
-                        </span>
-                        <div className="space-y-0.5">
-                          <p className="text-sm font-semibold text-zinc-205">{q.prompt}</p>
-                          <span className="inline-block px-2 py-0.5 bg-zinc-900 border border-zinc-800 rounded text-[10px] text-zinc-450 font-mono">
+                      <div className="flex items-start space-x-3.5">
+                        <div className="p-2 rounded-xl bg-zinc-900/60 border border-zinc-850 text-zinc-400 shrink-0">
+                          <IconComponent className="w-4.5 h-4.5" />
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-sm font-bold text-zinc-200 leading-snug">{q.prompt}</p>
+                          <span className="inline-block px-2 py-0.5 bg-zinc-950/80 border border-zinc-900 rounded text-[10px] text-zinc-500 font-mono">
                             {typeLabels[q.type]}
                           </span>
                         </div>
@@ -290,12 +356,11 @@ export default function QuestionsSettings() {
 
                   {/* Actions toolbar */}
                   {!isEditingThis && (
-                    <div className="flex items-center justify-end space-x-1.5 shrink-0 self-end sm:self-auto">
-                      {/* Move buttons */}
+                    <div className="flex items-center justify-end space-x-1 shrink-0 self-end sm:self-auto">
                       <button
                         onClick={() => handleMove(idx, 'up')}
                         disabled={idx === 0}
-                        className="p-2 bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-zinc-200 disabled:opacity-30 rounded-lg cursor-pointer transition-colors"
+                        className="p-2 bg-zinc-950 hover:bg-zinc-900 border border-zinc-850 text-zinc-400 hover:text-zinc-200 disabled:opacity-20 rounded-lg cursor-pointer transition-colors"
                         title="Move Up"
                       >
                         <ArrowUp className="w-3.5 h-3.5" />
@@ -303,35 +368,29 @@ export default function QuestionsSettings() {
                       <button
                         onClick={() => handleMove(idx, 'down')}
                         disabled={idx === questions.length - 1}
-                        className="p-2 bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-zinc-200 disabled:opacity-30 rounded-lg cursor-pointer transition-colors"
+                        className="p-2 bg-zinc-950 hover:bg-zinc-900 border border-zinc-850 text-zinc-400 hover:text-zinc-200 disabled:opacity-20 rounded-lg cursor-pointer transition-colors"
                         title="Move Down"
                       >
                         <ArrowDown className="w-3.5 h-3.5" />
                       </button>
-
-                      {/* Edit label button */}
                       <button
                         onClick={() => startEditing(q.id, q.prompt)}
-                        className="p-2 bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-zinc-200 rounded-lg cursor-pointer transition-colors"
-                        title="Edit wording"
+                        className="p-2 bg-zinc-950 hover:bg-zinc-900 border border-zinc-850 text-zinc-400 hover:text-zinc-200 rounded-lg cursor-pointer transition-colors"
+                        title="Edit text"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
-
-                      {/* Disable / Enable toggle */}
                       <button
                         onClick={() => handleToggleActive(q.id, q.is_active)}
                         className={`p-2 border rounded-lg cursor-pointer transition-colors ${
                           q.is_active 
-                            ? 'bg-zinc-900 border-zinc-800 text-teal-400 hover:text-teal-350' 
-                            : 'bg-zinc-900 border-zinc-800 text-zinc-550 hover:text-zinc-400'
+                            ? 'bg-zinc-955 border-zinc-850 text-teal-400 hover:text-teal-350' 
+                            : 'bg-zinc-950 border-zinc-850/50 text-zinc-600 hover:text-zinc-400'
                         }`}
                         title={q.is_active ? 'Disable question' : 'Enable question'}
                       >
                         {q.is_active ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
                       </button>
-
-                      {/* Delete button */}
                       <button
                         onClick={() => handleDeleteQuestion(q.id)}
                         className="p-2 bg-red-500/5 border border-red-500/10 text-red-400 hover:bg-red-500/15 rounded-lg cursor-pointer transition-colors"

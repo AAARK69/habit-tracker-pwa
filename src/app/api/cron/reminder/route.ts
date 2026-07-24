@@ -7,11 +7,15 @@ const vapidPublic = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '';
 const vapidPrivate = process.env.VAPID_PRIVATE_KEY || '';
 
 if (vapidPublic && vapidPrivate) {
-  webpush.setVapidDetails(
-    'mailto:reminder-service@habit-tracker-pwa.local',
-    vapidPublic,
-    vapidPrivate
-  );
+  try {
+    webpush.setVapidDetails(
+      'mailto:reminder-service@habit-tracker-pwa.local',
+      vapidPublic,
+      vapidPrivate
+    );
+  } catch (err: any) {
+    console.error('Error setting VAPID details (keys might be invalid or placeholders):', err.message);
+  }
 } else {
   console.warn('Warning: VAPID keys are missing. Push notifications will fail.');
 }
