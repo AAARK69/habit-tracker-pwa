@@ -28,7 +28,7 @@ const lora = Lora({
 });
 
 export const metadata: Metadata = {
-  title: "Reflect | Habit & Reflection Tracker",
+  title: "Reflect | Daily Habit & Reflection Tracker",
   description: "Track habits, customize questions, and get smart notifications.",
   manifest: "/manifest.json",
   appleWebApp: {

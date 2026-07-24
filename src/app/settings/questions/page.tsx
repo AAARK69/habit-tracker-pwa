@@ -94,7 +94,6 @@ export default function QuestionsSettings() {
     document.documentElement.setAttribute('data-theme', savedTheme);
   }, [user]);
 
-  // Live Theme Switcher Handler
   const handleSelectTheme = (themeId: string) => {
     setSelectedTheme(themeId);
     localStorage.setItem('reflect_accent_theme', themeId);
@@ -334,7 +333,7 @@ export default function QuestionsSettings() {
           Settings & Preferences
         </h1>
         <p className="text-base text-zinc-400 font-handwritten text-xl leading-snug">
-          Tailor your handmade journal prompts, change accent color themes, and export your data.
+          Tailor your daily journal prompts, change accent color themes, and export your data.
         </p>
       </div>
 
@@ -449,7 +448,7 @@ export default function QuestionsSettings() {
           <h2 className="text-sm font-bold text-zinc-300">Export Journal Data</h2>
         </div>
         <p className="text-xs text-zinc-400 leading-relaxed font-handwritten text-lg">
-          Export your handcrafted reflection entries for backup or offline review.
+          Export your reflection entries for backup or offline review.
         </p>
         <div className="flex space-x-3 pt-1">
           <button
@@ -521,7 +520,7 @@ export default function QuestionsSettings() {
                     className={`p-2.5 rounded-lg border transition-all flex items-center justify-center cursor-pointer ${
                       isSelected
                         ? 'scale-105'
-                        : 'bg-zinc-950/20 border-transparent text-zinc-500 hover:text-zinc-350 hover:bg-zinc-900/60'
+                        : 'bg-zinc-955 border-transparent text-zinc-500 hover:text-zinc-350 hover:bg-zinc-900/60'
                     }`}
                     title={item.label}
                   >

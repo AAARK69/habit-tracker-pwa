@@ -280,7 +280,6 @@ export default function Dashboard() {
     }
   };
 
-  // 14-day Mini Heatmap calculation for 16:9 sidebar preview
   const getSidebarHeatmapDays = () => {
     const datesSet = new Set(allLogDates);
     const days = [];
@@ -306,14 +305,12 @@ export default function Dashboard() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
         <Loader2 className="w-8 h-8 animate-spin" style={{ color: 'var(--accent)' }} />
-        <span className="text-zinc-500 text-xs font-handwritten text-lg">Opening your handmade journal...</span>
+        <span className="text-zinc-500 text-xs font-handwritten text-lg">Opening your personal journal...</span>
       </div>
     );
   }
 
   const sidebarHeatmapDays = getSidebarHeatmapDays();
-
-  // Desktop Widescreen 16:9 Studio Layout vs Mobile Vertical Layout
   const isDesktop = activeDevice === 'desktop';
 
   return (
@@ -360,7 +357,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Main Grid: Widescreen 2-column on PC (16:9) vs 1-column on Mobile */}
+      {/* Main Grid */}
       <div className={`grid gap-6 ${isDesktop ? 'grid-cols-12' : 'grid-cols-1'}`}>
         
         {/* Left Column (Desktop 16:9 Sidebar Stats) */}
@@ -472,7 +469,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Main Reflection Form / Stopping Cue Column (8-col Widescreen on PC, 1-col on Mobile) */}
+        {/* Main Reflection Form / Stopping Cue Column */}
         <div className={isDesktop ? 'col-span-8 space-y-6' : 'col-span-1 space-y-6'}>
           
           {streakInfo.isMilestone && isEditing && (
@@ -498,7 +495,7 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {/* Render questions grid (2-column on widescreen desktop, 1-column on mobile) */}
+                  {/* Render questions grid */}
                   <div className={`grid gap-4 ${isDesktop ? 'grid-cols-2' : 'grid-cols-1'}`}>
                     {questions.map((q) => {
                       const value = answers[q.id];
@@ -666,7 +663,7 @@ export default function Dashboard() {
                     className="text-[10px] font-mono font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full border"
                     style={{ backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-border)', color: 'var(--accent)' }}
                   >
-                    Handcrafted Entry Stamped ✒️
+                    Entry Stamped & Verified ✒️
                   </span>
                   <h3 className="text-2xl font-black text-zinc-100 font-serif-journal">Day Complete 🎯</h3>
                   <p className="text-zinc-300 text-xl leading-relaxed font-handwritten">
