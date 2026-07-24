@@ -1,15 +1,34 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDeviceLayout, LayoutMode } from '@/contexts/DeviceLayoutContext';
-import { ClipboardList, History, Settings, LogOut, Smartphone, Monitor, Zap, BarChart3, Target } from 'lucide-react';
+import { ClipboardList, History, Settings, LogOut, Smartphone, Monitor, Zap, BarChart3, Target, Wifi, WifiOff } from 'lucide-react';
 
 export default function Navigation({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, signOut } = useAuth();
   const { layoutMode, activeDevice, setLayoutMode } = useDeviceLayout();
+  const [isOnline, setIsOnline] = useState(true);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    setIsOnline(navigator.onLine);
+
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   if (pathname === '/login') {
     return <>{children}</>;
@@ -39,8 +58,18 @@ export default function Navigation({ children }: { children: React.ReactNode }) 
               <span className="font-bold text-2xl tracking-tight font-serif-journal" style={{ color: 'var(--foreground)' }}>
                 Reflect<span style={{ color: 'var(--accent)' }}>.</span>
               </span>
-              <span className="hidden md:inline-block text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-500 bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800">
-                {activeDevice === 'desktop' ? '💻 16:9 Desktop Studio' : '📱 Mobile PWA'}
+              <span className="hidden md:inline-flex items-center space-x-1 text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400 bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800">
+                {isOnline ? (
+                  <>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span>Synced</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                    <span>Offline</span>
+                  </>
+                )}
               </span>
             </div>
           </div>

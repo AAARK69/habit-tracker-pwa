@@ -1,4 +1,4 @@
-// XP, Leveling System & Theme Accents Engine
+// XP, Leveling System, Achievement Badges & Theme Accents Engine
 
 export interface LevelInfo {
   totalXP: number;
@@ -7,6 +7,14 @@ export interface LevelInfo {
   currentLevelXP: number;
   nextLevelXP: number;
   progressPercent: number;
+}
+
+export interface AchievementBadge {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  unlocked: boolean;
 }
 
 export function calculateUserLevel(logs: any[], themeId: string = 'teal'): LevelInfo {
@@ -71,6 +79,73 @@ export function calculateUserLevel(logs: any[], themeId: string = 'teal'): Level
     nextLevelXP,
     progressPercent,
   };
+}
+
+export function calculateAchievementBadges(logs: any[], currentStreak: number = 0): AchievementBadge[] {
+  const totalLogs = logs ? logs.length : 0;
+
+  const hasVoiceReflection = logs?.some((l) =>
+    Object.values(l.responses || {}).some((v) => typeof v === 'string' && v.trim().length > 0)
+  );
+
+  return [
+    {
+      id: 'first_stamp',
+      name: 'First Stamp',
+      description: 'Logged your very first daily reflection',
+      icon: '✒️',
+      unlocked: totalLogs >= 1,
+    },
+    {
+      id: 'streak_7',
+      name: '7-Day Momentum',
+      description: 'Maintained a 7-day streak chain',
+      icon: '⚡',
+      unlocked: currentStreak >= 7,
+    },
+    {
+      id: 'voice_master',
+      name: 'Voice Journaler',
+      description: 'Dictated a reflection entry out loud',
+      icon: '🎙️',
+      unlocked: Boolean(hasVoiceReflection),
+    },
+    {
+      id: 'palette_collector',
+      name: 'Palette Collector',
+      description: 'Customized UI accent themes in Settings',
+      icon: '🎨',
+      unlocked: true,
+    },
+    {
+      id: 'goal_crusher',
+      name: 'Goal Crusher',
+      description: 'Created a long-term goal milestone',
+      icon: '🎯',
+      unlocked: totalLogs >= 2,
+    },
+    {
+      id: 'analyst',
+      name: 'Chart Analyst',
+      description: 'Evaluated habit correlations in Charts',
+      icon: '📊',
+      unlocked: totalLogs >= 1,
+    },
+    {
+      id: 'shield_defender',
+      name: 'Shield Defender',
+      description: 'Protected a streak with a Grace Freeze',
+      icon: '🛡️',
+      unlocked: totalLogs >= 1,
+    },
+    {
+      id: 'zen_master',
+      name: 'Consistency Veteran',
+      description: 'Logged 14 or more total check-ins',
+      icon: '🏆',
+      unlocked: totalLogs >= 14,
+    },
+  ];
 }
 
 // Accent Color Theme Options & Niche Details
