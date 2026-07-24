@@ -9,7 +9,6 @@ export default function Navigation({ children }: { children: React.ReactNode }) 
   const pathname = usePathname();
   const { user, signOut } = useAuth();
 
-  // Hide navigation on the login screen
   if (pathname === '/login') {
     return <>{children}</>;
   }
@@ -23,14 +22,17 @@ export default function Navigation({ children }: { children: React.ReactNode }) 
   return (
     <div className="flex flex-col min-h-screen">
       {/* Top Navbar */}
-      <header className="sticky top-0 z-40 w-full glass-panel border-b border-zinc-800/80 px-4 py-3 sm:px-6 flex items-center justify-between">
+      <header className="sticky top-0 z-40 w-full craft-card border-b border-zinc-800/80 px-4 py-3 sm:px-6 flex items-center justify-between rounded-none">
         <div className="flex items-center space-x-8">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-lg border border-zinc-800 bg-zinc-900 flex items-center justify-center shadow-inner shadow-black/40">
-              <span className="font-bold text-base text-teal-400">R</span>
+            <div 
+              className="w-8 h-8 rounded-lg border flex items-center justify-center shadow-inner"
+              style={{ backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-border)' }}
+            >
+              <span className="font-bold text-base font-handwritten text-xl" style={{ color: 'var(--accent)' }}>R</span>
             </div>
-            <span className="font-bold text-xl tracking-tight bg-gradient-to-r from-teal-400 to-emerald-400 bg-clip-text text-transparent">
-              Reflect
+            <span className="font-bold text-2xl tracking-tight font-serif-journal" style={{ color: 'var(--foreground)' }}>
+              Reflect<span style={{ color: 'var(--accent)' }}>.</span>
             </span>
           </div>
           
@@ -43,9 +45,10 @@ export default function Navigation({ children }: { children: React.ReactNode }) 
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-sm transition-all duration-200 ${
+                  style={isActive ? { backgroundColor: 'var(--accent-glow)', color: 'var(--accent)', borderColor: 'var(--accent-border)' } : {}}
+                  className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-sm transition-all duration-200 border border-transparent ${
                     isActive
-                      ? 'bg-zinc-850 text-teal-400 font-medium shadow-sm'
+                      ? 'font-bold shadow-sm'
                       : 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200'
                   }`}
                 >
@@ -67,7 +70,7 @@ export default function Navigation({ children }: { children: React.ReactNode }) 
           {user && (
             <button
               onClick={signOut}
-              className="p-2 hover:bg-zinc-900 rounded-lg text-zinc-400 hover:text-zinc-200 transition-colors border border-transparent hover:border-zinc-800"
+              className="p-2 hover:bg-zinc-900 rounded-lg text-zinc-400 hover:text-zinc-200 transition-colors border border-transparent hover:border-zinc-800 cursor-pointer"
               title="Sign Out"
             >
               <LogOut className="w-4 h-4" />
@@ -82,7 +85,7 @@ export default function Navigation({ children }: { children: React.ReactNode }) 
       </main>
 
       {/* Bottom Navigation for Mobile */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 glass-panel border-t border-zinc-800/80 sm:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 craft-card border-t border-zinc-800/80 sm:hidden rounded-none">
         <div className="flex justify-around items-center h-16">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -91,9 +94,10 @@ export default function Navigation({ children }: { children: React.ReactNode }) 
               <Link
                 key={item.href}
                 href={item.href}
+                style={isActive ? { color: 'var(--accent)' } : {}}
                 className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-all duration-200 ${
                   isActive
-                    ? 'text-teal-450 font-medium'
+                    ? 'font-bold'
                     : 'text-zinc-500 hover:text-zinc-300'
                 }`}
               >

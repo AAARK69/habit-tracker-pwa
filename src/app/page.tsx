@@ -17,7 +17,7 @@ import {
   Brain, Flame, Heart, Coffee, ClipboardList, CheckSquare, 
   HelpCircle, CheckCircle, Edit3, Loader2, Check, X, 
   MessageSquare, ShieldCheck, Award, Lightbulb, Share2, 
-  Mic, MicOff, Trophy
+  Mic, MicOff, Trophy, PenTool
 } from 'lucide-react';
 
 const IconMap: Record<string, any> = {
@@ -152,7 +152,7 @@ export default function Dashboard() {
     }));
   };
 
-  // Voice-to-Text Journaling Handler (Web Speech API)
+  // Voice-to-Text Journaling Handler
   const toggleVoiceJournaling = (questionId: string) => {
     triggerHaptic(20);
     if (typeof window === 'undefined') return;
@@ -211,7 +211,7 @@ export default function Dashboard() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'Reflect Journey Progress',
+          title: 'Reflect Personal Journal',
           text,
           url: window.location.origin,
         });
@@ -284,34 +284,36 @@ export default function Dashboard() {
   if (authLoading || loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
-        <Loader2 className="w-8 h-8 animate-spin text-teal-450" />
-        <span className="text-zinc-550 text-xs font-mono">Loading your daily reflection...</span>
+        <Loader2 className="w-8 h-8 animate-spin" style={{ color: 'var(--accent)' }} />
+        <span className="text-zinc-500 text-xs font-handwritten text-lg">Opening your handmade journal...</span>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Header reflection + Live Streak & Streak Freeze Engine */}
+      {/* Handmade Header with Handwritten Subtitle */}
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
-          <div className="flex items-center space-x-2 text-teal-405">
-            <Sparkles className="w-4 h-4" />
-            <span className="text-xs uppercase tracking-widest font-extrabold font-mono">Daily Check-in</span>
+          <div className="flex items-center space-x-2">
+            <PenTool className="w-4 h-4" style={{ color: 'var(--accent)' }} />
+            <span className="text-xs uppercase tracking-widest font-extrabold font-mono" style={{ color: 'var(--accent)' }}>
+              Daily Handcrafted Journal
+            </span>
           </div>
-          <h1 className="text-3xl font-extrabold text-zinc-50 tracking-tight">
-            {isEditing ? "Log Your Day" : "Day Complete 🎯"}
+          <h1 className="text-3xl font-extrabold text-zinc-50 tracking-tight font-serif-journal">
+            {isEditing ? "Today's Reflections" : "Day Complete 🎯"}
           </h1>
-          <p className="text-sm text-zinc-400 leading-relaxed">
+          <p className="text-base text-zinc-400 font-handwritten text-xl leading-snug">
             {isEditing 
-              ? "Take a moment to reflect on your habits, actions, and mindset."
-              : "All habits logged. Take a breath and get back to real life!"}
+              ? "Take a breath, put pen to paper, and log your habits."
+              : "All habits logged & stamped. Take a rest and enjoy real life!"}
           </p>
         </div>
 
-        {/* Dynamic Streak Badge & Share Button */}
+        {/* Dynamic Streak Badge */}
         <div className="flex flex-col items-end space-y-1.5 shrink-0">
-          <div className="glass-panel px-3.5 py-2 rounded-2xl border border-amber-500/20 bg-amber-500/5 flex items-center space-x-2 shadow-md shadow-amber-950/10">
+          <div className="craft-card px-3.5 py-2 border border-amber-500/20 bg-amber-500/5 flex items-center space-x-2 shadow-md">
             <Flame className="w-5 h-5 text-amber-400 animate-pulse" />
             <div className="text-right">
               <span className="block text-xs font-black text-amber-300 font-mono leading-none">
@@ -323,7 +325,8 @@ export default function Dashboard() {
 
           <button
             onClick={handleShareStreak}
-            className="flex items-center space-x-1 text-[10px] font-mono text-teal-400 bg-teal-500/10 px-2 py-0.5 rounded-full border border-teal-500/20 hover:bg-teal-500/20 transition-colors cursor-pointer"
+            style={{ color: 'var(--accent)', backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-border)' }}
+            className="flex items-center space-x-1 text-[10px] font-mono px-2 py-0.5 rounded-full border hover:opacity-80 transition-opacity cursor-pointer"
           >
             <Share2 className="w-3 h-3" />
             <span>{copiedShare ? 'Copied!' : 'Share'}</span>
@@ -332,12 +335,12 @@ export default function Dashboard() {
       </div>
 
       {/* Gamification Level & XP Progress Card */}
-      <div className="glass-panel p-4 rounded-2xl border border-zinc-850 bg-zinc-900/20 space-y-2">
+      <div className="craft-card p-4 space-y-2 border-zinc-850">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Trophy className="w-4 h-4 text-amber-400" />
             <span className="text-xs font-black text-zinc-150 font-mono">
-              Level {levelInfo.level}: <span className="text-teal-400">{levelInfo.title}</span>
+              Level {levelInfo.level}: <span className="font-handwritten text-lg" style={{ color: 'var(--accent)' }}>{levelInfo.title}</span>
             </span>
           </div>
           <span className="text-xs font-bold text-zinc-450 font-mono">
@@ -345,19 +348,22 @@ export default function Dashboard() {
           </span>
         </div>
 
-        {/* Progress Bar */}
+        {/* Dynamic Theme Progress Bar */}
         <div className="w-full h-2 bg-zinc-950 rounded-full overflow-hidden border border-zinc-850">
           <div 
-            className="h-full bg-gradient-to-r from-teal-400 to-emerald-400 transition-all duration-500 rounded-full"
-            style={{ width: `${levelInfo.progressPercent}%` }}
+            className="h-full transition-all duration-500 rounded-full"
+            style={{ width: `${levelInfo.progressPercent}%`, background: 'var(--accent-gradient)' }}
           ></div>
         </div>
       </div>
 
       {/* Adaptive Micro-Insight Banner */}
       {microInsight && (
-        <div className="p-3.5 rounded-xl border border-teal-500/20 bg-teal-500/5 text-xs text-zinc-300 flex items-center space-x-2.5">
-          <Lightbulb className="w-4 h-4 text-teal-400 shrink-0" />
+        <div 
+          className="p-3.5 rounded-xl border text-xs text-zinc-300 flex items-center space-x-2.5"
+          style={{ backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-border)' }}
+        >
+          <Lightbulb className="w-4 h-4 shrink-0" style={{ color: 'var(--accent)' }} />
           <span className="leading-snug">{microInsight}</span>
         </div>
       )}
@@ -376,14 +382,14 @@ export default function Dashboard() {
       {/* Subscription Settings Banner */}
       <NotificationToggle />
 
-      {/* Main Form or Artificial "Stopping Cue" Card */}
+      {/* Main Form or Handmade "Day Complete" Card */}
       {isEditing ? (
         <form onSubmit={handleSubmit} className="space-y-6">
           {questions.length === 0 ? (
-            <div className="glass-panel p-8 rounded-2xl text-center space-y-3 border-zinc-800 bg-zinc-900/10">
+            <div className="craft-card p-8 text-center space-y-3 border-zinc-800 bg-zinc-900/10">
               <ClipboardList className="w-10 h-10 text-zinc-650 mx-auto" />
-              <p className="text-zinc-400 text-sm">
-                No active questions found. Go to Settings to configure your tracker checklist.
+              <p className="text-zinc-400 text-sm font-handwritten text-xl">
+                Your journal is empty! Go to Settings to create custom prompts.
               </p>
             </div>
           ) : (
@@ -395,12 +401,15 @@ export default function Dashboard() {
                 return (
                   <div 
                     key={q.id} 
-                    className="glass-panel p-5 rounded-2xl border border-zinc-850 bg-zinc-900/10 space-y-4 transition-all duration-200 hover:border-zinc-800"
+                    className="craft-card p-5 space-y-4 transition-all duration-200 hover:border-zinc-800"
                   >
                     {/* Header: Icon + Prompt */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3.5">
-                        <div className="p-2 rounded-xl bg-teal-500/10 text-teal-400 border border-teal-500/10 shrink-0">
+                        <div 
+                          className="p-2 rounded-xl border shrink-0"
+                          style={{ backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-border)', color: 'var(--accent)' }}
+                        >
                           <IconComponent className="w-4.5 h-4.5" />
                         </div>
                         <label className="block text-sm font-bold text-zinc-200">
@@ -408,7 +417,7 @@ export default function Dashboard() {
                         </label>
                       </div>
 
-                      {/* Voice-to-Text Dictation Button for Text Questions */}
+                      {/* Voice Dictation Button */}
                       {q.type === 'text' && (
                         <button
                           type="button"
@@ -416,9 +425,9 @@ export default function Dashboard() {
                           className={`p-2 rounded-xl border transition-all cursor-pointer ${
                             isListening[q.id]
                               ? 'bg-red-500/20 border-red-500/40 text-red-400 animate-pulse'
-                              : 'bg-zinc-900/60 border-zinc-850 text-zinc-400 hover:text-teal-400'
+                              : 'bg-zinc-900/60 border-zinc-850 text-zinc-400 hover:text-zinc-200'
                           }`}
-                          title="Voice Journaling (Dictate)"
+                          title="Voice Dictation (Talk to Journal)"
                         >
                           {isListening[q.id] ? <MicOff className="w-4 h-4 text-red-400" /> : <Mic className="w-4 h-4" />}
                         </button>
@@ -431,9 +440,10 @@ export default function Dashboard() {
                         <button
                           type="button"
                           onClick={() => handleAnswerChange(q.id, true)}
+                          style={value === true ? { backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-border)', color: 'var(--accent)' } : {}}
                           className={`flex-1 py-2.5 rounded-xl text-xs font-bold border transition-all duration-300 flex items-center justify-center space-x-1.5 cursor-pointer ${
                             value === true
-                              ? 'bg-teal-500/10 border-teal-500/40 text-teal-400 shadow-lg shadow-teal-500/5'
+                              ? 'shadow-lg'
                               : 'bg-zinc-900/40 border-zinc-850 text-zinc-450 hover:text-zinc-200 hover:bg-zinc-900/80 hover:border-zinc-800'
                           }`}
                         >
@@ -445,7 +455,7 @@ export default function Dashboard() {
                           onClick={() => handleAnswerChange(q.id, false)}
                           className={`flex-1 py-2.5 rounded-xl text-xs font-bold border transition-all duration-300 flex items-center justify-center space-x-1.5 cursor-pointer ${
                             value === false
-                              ? 'bg-red-500/10 border-red-500/40 text-red-400 shadow-lg shadow-red-500/5'
+                              ? 'bg-red-500/10 border-red-500/40 text-red-400 shadow-lg'
                               : 'bg-zinc-900/40 border-zinc-850 text-zinc-450 hover:text-zinc-200 hover:bg-zinc-900/80 hover:border-zinc-800'
                           }`}
                         >
@@ -464,7 +474,8 @@ export default function Dashboard() {
                           onChange={(e) => handleAnswerChange(q.id, e.target.value === '' ? '' : Number(e.target.value))}
                           placeholder="Enter quantity"
                           required
-                          className="w-full px-3.5 py-2.5 bg-zinc-950/65 border border-zinc-850 rounded-xl text-zinc-200 placeholder-zinc-650 focus:outline-none focus:ring-1 focus:ring-teal-450 focus:border-teal-450 text-sm font-mono"
+                          className="w-full px-3.5 py-2.5 bg-zinc-950/65 border border-zinc-850 rounded-xl text-zinc-200 placeholder-zinc-650 focus:outline-none focus:ring-1 text-sm font-mono"
+                          style={{ borderColor: value !== '' ? 'var(--accent-border)' : '' }}
                         />
                       </div>
                     )}
@@ -481,9 +492,10 @@ export default function Dashboard() {
                                 key={num}
                                 type="button"
                                 onClick={() => handleAnswerChange(q.id, num)}
+                                style={isSelected ? { backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-border)', color: 'var(--accent)' } : {}}
                                 className={`w-10 h-10 rounded-full text-xs font-extrabold border transition-all duration-350 flex items-center justify-center cursor-pointer ${
                                   isSelected
-                                    ? 'bg-teal-500/15 border-teal-500/40 text-teal-400 shadow-md shadow-teal-500/5 scale-110'
+                                    ? 'shadow-md scale-110'
                                     : 'bg-zinc-900/40 border-zinc-850 text-zinc-500 hover:text-zinc-300 hover:border-zinc-800'
                                 }`}
                                 title={labels[num - 1]}
@@ -509,7 +521,7 @@ export default function Dashboard() {
                           placeholder="Reflect on your day... (Tap mic icon above to dictate)"
                           required
                           rows={3}
-                          className="w-full px-3.5 py-3 bg-zinc-950/65 border border-zinc-850 rounded-xl text-zinc-205 placeholder-zinc-650 focus:outline-none focus:ring-1 focus:ring-teal-450 focus:border-teal-450 text-sm leading-relaxed resize-none"
+                          className="w-full px-3.5 py-3 bg-zinc-950/65 border border-zinc-850 rounded-xl text-zinc-205 placeholder-zinc-650 focus:outline-none focus:ring-1 text-sm font-serif-journal leading-relaxed resize-none"
                         />
                       </div>
                     )}
@@ -520,12 +532,13 @@ export default function Dashboard() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="glow-btn w-full py-3.5 bg-gradient-to-r from-teal-400 to-emerald-400 text-zinc-950 font-bold text-sm rounded-xl hover:opacity-95 shadow-lg shadow-teal-500/10 transition-opacity flex justify-center items-center space-x-2 cursor-pointer disabled:opacity-50"
+                style={{ background: 'var(--accent-gradient)', color: '#09090b' }}
+                className="glow-btn w-full py-3.5 font-bold text-sm rounded-xl hover:opacity-95 shadow-lg transition-opacity flex justify-center items-center space-x-2 cursor-pointer disabled:opacity-50"
               >
                 {submitting ? (
                   <Loader2 className="w-5 h-5 animate-spin text-zinc-950" />
                 ) : (
-                  <span>Submit Today's Reflections (+70 XP)</span>
+                  <span className="font-handwritten text-xl font-bold tracking-wide">Stamp & Save Daily Journal (+70 XP) ✒️</span>
                 )}
               </button>
             </div>
@@ -533,19 +546,28 @@ export default function Dashboard() {
         </form>
       ) : (
         <div className="space-y-4 animate-fade-in">
-          {/* Explicit "Day Complete" Stopping Cue Card */}
-          <div className="glass-panel p-6 rounded-2xl border border-teal-500/20 bg-gradient-to-b from-teal-500/10 to-transparent flex flex-col items-center text-center space-y-4 shadow-xl shadow-teal-950/20 relative overflow-hidden">
-            <div className="w-14 h-14 rounded-full bg-teal-500/15 border border-teal-500/30 flex items-center justify-center text-teal-400 shadow-inner">
+          {/* Handmade "Day Complete" Card with Handwritten Seal */}
+          <div 
+            className="craft-card p-6 border flex flex-col items-center text-center space-y-4 shadow-xl relative overflow-hidden"
+            style={{ borderColor: 'var(--accent-border)', backgroundColor: 'rgba(18, 19, 22, 0.85)' }}
+          >
+            <div 
+              className="w-14 h-14 rounded-full border flex items-center justify-center shadow-inner"
+              style={{ backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-border)', color: 'var(--accent)' }}
+            >
               <CheckCircle className="w-8 h-8" />
             </div>
             
             <div className="space-y-1.5 max-w-md">
-              <span className="text-[10px] font-mono font-extrabold uppercase tracking-widest text-teal-400 bg-teal-500/10 px-2.5 py-0.5 rounded-full border border-teal-500/20">
-                Stopping Cue Activated
+              <span 
+                className="text-[10px] font-mono font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full border"
+                style={{ backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-border)', color: 'var(--accent)' }}
+              >
+                Handcrafted Entry Stamped ✒️
               </span>
-              <h3 className="text-xl font-black text-zinc-100">Day Complete 🎯</h3>
-              <p className="text-zinc-300 text-xs leading-relaxed font-mono">
-                {motivationalQuote || "You've successfully completed today's reflection. Get back to real life!"}
+              <h3 className="text-2xl font-black text-zinc-100 font-serif-journal">Day Complete 🎯</h3>
+              <p className="text-zinc-300 text-xl leading-relaxed font-handwritten">
+                "{motivationalQuote || "You've successfully completed today's reflection. Get back to real life!"}"
               </p>
             </div>
 
@@ -573,7 +595,7 @@ export default function Dashboard() {
               return (
                 <div 
                   key={q.id} 
-                  className="glass-panel p-4 rounded-xl border border-zinc-850/80 bg-zinc-900/5 flex flex-col space-y-2.5 sm:flex-row sm:space-y-0 sm:items-center sm:justify-between"
+                  className="craft-card p-4 border border-zinc-850/80 bg-zinc-900/5 flex flex-col space-y-2.5 sm:flex-row sm:space-y-0 sm:items-center sm:justify-between"
                 >
                   <div className="flex items-center space-x-3">
                     <div className="p-1.5 rounded-lg bg-zinc-900/70 border border-zinc-850 text-zinc-400 shrink-0">
@@ -583,8 +605,8 @@ export default function Dashboard() {
                   </div>
 
                   {q.type === 'text' ? (
-                    <div className="text-xs italic bg-zinc-950/40 p-2.5 rounded-lg border border-zinc-900 flex items-start space-x-1.5 text-zinc-350 sm:max-w-md w-full">
-                      <MessageSquare className="w-3.5 h-3.5 text-zinc-500 shrink-0 mt-0.5" />
+                    <div className="text-base font-handwritten bg-zinc-950/40 p-2.5 rounded-lg border border-zinc-900 flex items-start space-x-1.5 text-zinc-300 sm:max-w-md w-full">
+                      <MessageSquare className="w-3.5 h-3.5 text-zinc-500 shrink-0 mt-1" />
                       <p className="leading-relaxed whitespace-pre-wrap">{val || '-'}</p>
                     </div>
                   ) : (

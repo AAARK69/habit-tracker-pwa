@@ -38,7 +38,6 @@ export default function HistoryPage() {
     const fetchHistory = async () => {
       setLoading(true);
       try {
-        // 1. Fetch all questions to map prompts & icons
         const { data: questions, error: qError } = await supabase
           .from('questions')
           .select('*')
@@ -52,7 +51,6 @@ export default function HistoryPage() {
         });
         setQuestionsMap(qMap);
 
-        // 2. Fetch all daily logs ordered by date desc
         const { data: dailyLogs, error: logsError } = await supabase
           .from('daily_logs')
           .select('*')
@@ -82,7 +80,6 @@ export default function HistoryPage() {
     });
   };
 
-  // Generate 28-day Activity Heatmap matrix
   const generateHeatmapDays = () => {
     const loggedDatesSet = new Set(logs.map((l) => l.date));
     const days = [];
@@ -109,8 +106,8 @@ export default function HistoryPage() {
   if (authLoading || loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
-        <Loader2 className="w-8 h-8 animate-spin text-teal-400" />
-        <span className="text-zinc-550 text-xs font-mono">Retrieving your journey logs...</span>
+        <Loader2 className="w-8 h-8 animate-spin" style={{ color: 'var(--accent)' }} />
+        <span className="text-zinc-500 text-xs font-handwritten text-lg">Retrieving your journal logs...</span>
       </div>
     );
   }
@@ -121,23 +118,23 @@ export default function HistoryPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="space-y-1">
-        <div className="flex items-center space-x-2 text-teal-405">
-          <Calendar className="w-4 h-4" />
-          <span className="text-xs uppercase tracking-widest font-extrabold font-mono">Timeline</span>
+        <div className="flex items-center space-x-2">
+          <Calendar className="w-4 h-4" style={{ color: 'var(--accent)' }} />
+          <span className="text-xs uppercase tracking-widest font-extrabold font-mono" style={{ color: 'var(--accent)' }}>Timeline</span>
         </div>
-        <h1 className="text-3xl font-extrabold text-zinc-50 tracking-tight">
+        <h1 className="text-3xl font-extrabold text-zinc-50 tracking-tight font-serif-journal">
           Reflection History
         </h1>
-        <p className="text-sm text-zinc-400">
-          Scroll through your past entries and reflect on your growth over time.
+        <p className="text-base text-zinc-400 font-handwritten text-xl leading-snug">
+          Scroll through your past journal entries and reflect on your growth over time.
         </p>
       </div>
 
       {/* 28-Day Mini Heatmap Grid */}
-      <div className="glass-panel p-5 rounded-2xl border border-zinc-850 bg-zinc-900/10 space-y-3">
+      <div className="craft-card p-5 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <Activity className="w-4 h-4 text-teal-400" />
+            <Activity className="w-4 h-4" style={{ color: 'var(--accent)' }} />
             <span className="text-xs font-extrabold text-zinc-200 uppercase tracking-widest font-mono">28-Day Consistency Matrix</span>
           </div>
           <span className="text-[10px] text-zinc-500 font-mono">
@@ -149,9 +146,10 @@ export default function HistoryPage() {
           {heatmapDays.map((day) => (
             <div
               key={day.dateStr}
+              style={day.isLogged ? { backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-border)', color: 'var(--accent)' } : {}}
               className={`p-2 rounded-xl border flex flex-col items-center justify-center transition-all ${
                 day.isLogged
-                  ? 'bg-teal-500/15 border-teal-500/35 text-teal-400 shadow-sm shadow-teal-500/10 scale-105'
+                  ? 'shadow-sm scale-105 font-bold'
                   : 'bg-zinc-950/40 border-zinc-850/60 text-zinc-650'
               }`}
               title={`${day.dateStr}: ${day.isLogged ? 'Completed' : 'Missed'}`}
@@ -164,9 +162,9 @@ export default function HistoryPage() {
       </div>
 
       {logs.length === 0 ? (
-        <div className="glass-panel p-12 rounded-2xl text-center space-y-3 border-zinc-850 bg-zinc-900/10">
+        <div className="craft-card p-12 text-center space-y-3 border-zinc-850 text-zinc-450 font-handwritten text-xl">
           <Calendar className="w-10 h-10 text-zinc-650 mx-auto" />
-          <p className="text-zinc-400 text-sm">
+          <p className="text-zinc-400">
             No reflections logged yet. Submit your first daily checklist on the Track tab!
           </p>
         </div>
@@ -184,9 +182,9 @@ export default function HistoryPage() {
                 </div>
 
                 {/* Entry Card */}
-                <div className="glass-panel p-5 rounded-2xl border border-zinc-850 bg-zinc-900/5 space-y-4 hover:border-zinc-800 transition-all duration-300 shadow shadow-black/35">
+                <div className="craft-card p-5 space-y-4 hover:border-zinc-800 transition-all duration-300 shadow">
                   <div className="flex justify-between items-center border-b border-zinc-850/65 pb-2.5">
-                    <span className="text-xs font-bold text-teal-450 font-mono">
+                    <span className="text-xs font-bold font-mono" style={{ color: 'var(--accent)' }}>
                       {formatDate(log.date)}
                     </span>
                     <span className="text-[10px] text-zinc-550 font-mono">
@@ -226,7 +224,10 @@ export default function HistoryPage() {
                             {type === 'boolean' && (
                               <div className="flex items-center mt-1">
                                 {val === true ? (
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-teal-500/10 text-teal-400 border border-teal-500/20">
+                                  <span 
+                                    className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border"
+                                    style={{ backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-border)', color: 'var(--accent)' }}
+                                  >
                                     <Check className="w-3.5 h-3.5 mr-0.5" /> Yes
                                   </span>
                                 ) : val === false ? (
@@ -249,7 +250,7 @@ export default function HistoryPage() {
                             {/* Scale rating */}
                             {type === 'scale_1_to_5' && (
                               <div className="flex items-center space-x-1 mt-1 pl-0.5">
-                                <span className="text-sm font-extrabold text-teal-400 font-mono">
+                                <span className="text-sm font-extrabold font-mono" style={{ color: 'var(--accent)' }}>
                                   {val}
                                 </span>
                                 <span className="text-zinc-650 text-xs">/ 5</span>
@@ -261,9 +262,9 @@ export default function HistoryPage() {
 
                             {/* Written reflection */}
                             {type === 'text' && (
-                              <div className="mt-1 flex items-start space-x-2 text-zinc-300 bg-zinc-900/30 border border-zinc-850 p-2.5 rounded-lg w-full">
-                                <MessageSquare className="w-3.5 h-3.5 text-zinc-550 shrink-0 mt-0.5" />
-                                <p className="text-xs italic leading-relaxed text-zinc-350 whitespace-pre-wrap font-sans">
+                              <div className="mt-1 flex items-start space-x-2 text-zinc-200 bg-zinc-950/40 border border-zinc-850 p-2.5 rounded-lg w-full">
+                                <MessageSquare className="w-3.5 h-3.5 text-zinc-500 shrink-0 mt-1" />
+                                <p className="text-base font-handwritten leading-relaxed text-zinc-300 whitespace-pre-wrap">
                                   {val || '-'}
                                 </p>
                               </div>

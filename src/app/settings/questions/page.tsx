@@ -90,11 +90,16 @@ export default function QuestionsSettings() {
     setSoundEnabled(savedSound);
     setHapticsEnabled(savedHaptics);
     setReminderTime(savedReminder);
+
+    document.documentElement.setAttribute('data-theme', savedTheme);
   }, [user]);
 
+  // Live Theme Switcher Handler
   const handleSelectTheme = (themeId: string) => {
     setSelectedTheme(themeId);
     localStorage.setItem('reflect_accent_theme', themeId);
+    document.documentElement.setAttribute('data-theme', themeId);
+    window.dispatchEvent(new Event('reflect_theme_change'));
   };
 
   const handleToggleSound = () => {
@@ -114,7 +119,6 @@ export default function QuestionsSettings() {
     localStorage.setItem('reflect_reminder_time', time);
   };
 
-  // Reset Default Questions Handler with column fallback
   const handleResetDefaults = async () => {
     if (!user) return;
     if (!confirm('Restore default habit prompts? Existing custom prompts will remain untouched.')) return;
@@ -130,7 +134,6 @@ export default function QuestionsSettings() {
 
       let { error } = await supabase.from('questions').insert(defaultPrompts);
       
-      // Fallback if 'icon' column does not exist in schema cache
       if (error && (error.message.includes("icon") || error.message.includes("schema cache") || error.message.includes("column"))) {
         const fallbackPrompts = defaultPrompts.map(({ icon, ...rest }) => rest);
         const retry = await supabase.from('questions').insert(fallbackPrompts);
@@ -146,7 +149,6 @@ export default function QuestionsSettings() {
     }
   };
 
-  // Export Data Handler
   const handleExportData = async (format: 'csv' | 'json') => {
     if (!user) return;
     setExporting(true);
@@ -190,7 +192,6 @@ export default function QuestionsSettings() {
     }
   };
 
-  // Add question handler with missing 'icon' column fallback
   const handleAddQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !newPrompt.trim()) return;
@@ -212,7 +213,6 @@ export default function QuestionsSettings() {
         .from('questions')
         .insert(insertPayload);
 
-      // Fallback if 'icon' column is missing from the database schema cache
       if (error && (error.message.includes("icon") || error.message.includes("schema cache") || error.message.includes("column"))) {
         delete insertPayload.icon;
         const retry = await supabase.from('questions').insert(insertPayload);
@@ -246,7 +246,7 @@ export default function QuestionsSettings() {
   };
 
   const handleDeleteQuestion = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this question? This will not delete past log answers, but the question will no longer be visible on current or future tracking forms.')) return;
+    if (!confirm('Are you sure you want to delete this question?')) return;
     
     try {
       const { error } = await supabase
@@ -314,8 +314,8 @@ export default function QuestionsSettings() {
   if (authLoading || loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
-        <Loader2 className="w-8 h-8 animate-spin text-teal-400" />
-        <span className="text-zinc-500 text-xs font-mono">Loading question configurations...</span>
+        <Loader2 className="w-8 h-8 animate-spin" style={{ color: 'var(--accent)' }} />
+        <span className="text-zinc-500 text-xs font-handwritten text-lg">Opening settings journal...</span>
       </div>
     );
   }
@@ -324,92 +324,24 @@ export default function QuestionsSettings() {
     <div className="space-y-6">
       {/* Header */}
       <div className="space-y-1">
-        <div className="flex items-center space-x-2 text-teal-400">
-          <CheckSquare className="w-4 h-4" />
-          <span className="text-xs uppercase tracking-widest font-extrabold font-mono">Customization & Privacy</span>
+        <div className="flex items-center space-x-2">
+          <CheckSquare className="w-4 h-4" style={{ color: 'var(--accent)' }} />
+          <span className="text-xs uppercase tracking-widest font-extrabold font-mono" style={{ color: 'var(--accent)' }}>
+            Journal Settings
+          </span>
         </div>
-        <h1 className="text-3xl font-extrabold text-zinc-50 tracking-tight">
+        <h1 className="text-3xl font-extrabold text-zinc-50 tracking-tight font-serif-journal">
           Settings & Preferences
         </h1>
-        <p className="text-sm text-zinc-400">
-          Configure app preferences, customize prompts, switch themes, and manage data.
+        <p className="text-base text-zinc-400 font-handwritten text-xl leading-snug">
+          Tailor your handmade journal prompts, change accent color themes, and export your data.
         </p>
       </div>
 
-      {/* App Feedback & Notification Preferences */}
-      <div className="glass-panel p-5 rounded-2xl border border-zinc-850 bg-zinc-900/10 space-y-4">
-        <h2 className="text-sm font-bold text-zinc-300">
-          App Feedback & Preferences
-        </h2>
-
-        <div className="space-y-3">
-          {/* Audio Chimes Toggle */}
-          <div className="flex items-center justify-between p-3 rounded-xl border border-zinc-850/80 bg-zinc-950/40">
-            <div className="flex items-center space-x-3">
-              {soundEnabled ? <Volume2 className="w-4 h-4 text-teal-400" /> : <VolumeX className="w-4 h-4 text-zinc-500" />}
-              <div>
-                <span className="block text-xs font-bold text-zinc-200">Completion Chimes</span>
-                <span className="text-[10px] text-zinc-500">Play web audio chord on check-in submission</span>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={handleToggleSound}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
-                soundEnabled ? 'bg-teal-500/10 text-teal-400 border-teal-500/30' : 'bg-zinc-900 text-zinc-500 border-zinc-800'
-              }`}
-            >
-              {soundEnabled ? 'Enabled' : 'Disabled'}
-            </button>
-          </div>
-
-          {/* Haptics Toggle */}
-          <div className="flex items-center justify-between p-3 rounded-xl border border-zinc-850/80 bg-zinc-950/40">
-            <div className="flex items-center space-x-3">
-              <Smartphone className="w-4 h-4 text-teal-400" />
-              <div>
-                <span className="block text-xs font-bold text-zinc-200">Haptic Vibrations</span>
-                <span className="text-[10px] text-zinc-500">Tactile haptic feedback on mobile button taps</span>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={handleToggleHaptics}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
-                hapticsEnabled ? 'bg-teal-500/10 text-teal-400 border-teal-500/30' : 'bg-zinc-900 text-zinc-500 border-zinc-800'
-              }`}
-            >
-              {hapticsEnabled ? 'Enabled' : 'Disabled'}
-            </button>
-          </div>
-
-          {/* Target Reminder Hour Picker */}
-          <div className="flex items-center justify-between p-3 rounded-xl border border-zinc-850/80 bg-zinc-950/40">
-            <div className="flex items-center space-x-3">
-              <Clock className="w-4 h-4 text-teal-400" />
-              <div>
-                <span className="block text-xs font-bold text-zinc-200">Reminder Time Window</span>
-                <span className="text-[10px] text-zinc-500">Target hour for daily push notifications</span>
-              </div>
-            </div>
-            <select
-              value={reminderTime}
-              onChange={(e) => handleReminderTimeChange(e.target.value)}
-              className="px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-xs font-mono text-zinc-200 focus:outline-none focus:ring-1 focus:ring-teal-450 cursor-pointer"
-            >
-              <option value="20:00">8:00 PM</option>
-              <option value="21:00">9:00 PM</option>
-              <option value="22:00">10:00 PM (Default)</option>
-              <option value="23:00">11:00 PM</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Theme Accent Switcher */}
-      <div className="glass-panel p-5 rounded-2xl border border-zinc-850 bg-zinc-900/10 space-y-3">
+      {/* Dynamic Theme Accent Switcher */}
+      <div className="craft-card p-5 space-y-3">
         <div className="flex items-center space-x-2">
-          <Palette className="w-4 h-4 text-teal-400" />
+          <Palette className="w-4 h-4" style={{ color: 'var(--accent)' }} />
           <h2 className="text-sm font-bold text-zinc-300">UI Accent Color Themes</h2>
         </div>
         <div className="flex flex-wrap gap-2.5 pt-1">
@@ -420,14 +352,15 @@ export default function QuestionsSettings() {
                 key={t.id}
                 type="button"
                 onClick={() => handleSelectTheme(t.id)}
-                className={`flex items-center space-x-2 px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                style={isSelected ? { backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-border)', color: 'var(--accent)' } : {}}
+                className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                   isSelected
-                    ? 'bg-zinc-900 border-teal-500/40 text-teal-400 shadow-md'
+                    ? 'shadow-md scale-105'
                     : 'bg-zinc-950/40 border-zinc-850 text-zinc-450 hover:text-zinc-200'
                 }`}
               >
                 <div 
-                  className="w-3 h-3 rounded-full shadow-sm"
+                  className="w-3.5 h-3.5 rounded-full shadow-sm border border-black/40 shrink-0"
                   style={{ backgroundColor: t.colorHex }}
                 ></div>
                 <span>{t.name}</span>
@@ -437,14 +370,86 @@ export default function QuestionsSettings() {
         </div>
       </div>
 
+      {/* App Feedback & Notification Preferences */}
+      <div className="craft-card p-5 space-y-4">
+        <h2 className="text-sm font-bold text-zinc-300">
+          App Feedback & Preferences
+        </h2>
+
+        <div className="space-y-3">
+          {/* Audio Chimes Toggle */}
+          <div className="flex items-center justify-between p-3 rounded-xl border border-zinc-850/80 bg-zinc-950/40">
+            <div className="flex items-center space-x-3">
+              {soundEnabled ? <Volume2 className="w-4 h-4 text-zinc-200" style={{ color: 'var(--accent)' }} /> : <VolumeX className="w-4 h-4 text-zinc-500" />}
+              <div>
+                <span className="block text-xs font-bold text-zinc-200">Completion Chimes</span>
+                <span className="text-[10px] text-zinc-500 font-mono">Play web audio chord on check-in submission</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleToggleSound}
+              style={soundEnabled ? { backgroundColor: 'var(--accent-glow)', color: 'var(--accent)', borderColor: 'var(--accent-border)' } : {}}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
+                soundEnabled ? '' : 'bg-zinc-900 text-zinc-500 border-zinc-800'
+              }`}
+            >
+              {soundEnabled ? 'Enabled' : 'Disabled'}
+            </button>
+          </div>
+
+          {/* Haptics Toggle */}
+          <div className="flex items-center justify-between p-3 rounded-xl border border-zinc-850/80 bg-zinc-950/40">
+            <div className="flex items-center space-x-3">
+              <Smartphone className="w-4 h-4" style={{ color: 'var(--accent)' }} />
+              <div>
+                <span className="block text-xs font-bold text-zinc-200">Haptic Vibrations</span>
+                <span className="text-[10px] text-zinc-500 font-mono">Tactile haptic feedback on mobile button taps</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleToggleHaptics}
+              style={hapticsEnabled ? { backgroundColor: 'var(--accent-glow)', color: 'var(--accent)', borderColor: 'var(--accent-border)' } : {}}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
+                hapticsEnabled ? '' : 'bg-zinc-900 text-zinc-500 border-zinc-800'
+              }`}
+            >
+              {hapticsEnabled ? 'Enabled' : 'Disabled'}
+            </button>
+          </div>
+
+          {/* Target Reminder Hour Picker */}
+          <div className="flex items-center justify-between p-3 rounded-xl border border-zinc-850/80 bg-zinc-950/40">
+            <div className="flex items-center space-x-3">
+              <Clock className="w-4 h-4" style={{ color: 'var(--accent)' }} />
+              <div>
+                <span className="block text-xs font-bold text-zinc-200">Reminder Time Window</span>
+                <span className="text-[10px] text-zinc-500 font-mono">Target hour for daily push notifications</span>
+              </div>
+            </div>
+            <select
+              value={reminderTime}
+              onChange={(e) => handleReminderTimeChange(e.target.value)}
+              className="px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-xs font-mono text-zinc-200 focus:outline-none cursor-pointer"
+            >
+              <option value="20:00">8:00 PM</option>
+              <option value="21:00">9:00 PM</option>
+              <option value="22:00">10:00 PM (Default)</option>
+              <option value="23:00">11:00 PM</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
       {/* Data Export & Backup Section */}
-      <div className="glass-panel p-5 rounded-2xl border border-zinc-850 bg-zinc-900/10 space-y-3">
+      <div className="craft-card p-5 space-y-3">
         <div className="flex items-center space-x-2">
-          <Download className="w-4 h-4 text-teal-400" />
+          <Download className="w-4 h-4" style={{ color: 'var(--accent)' }} />
           <h2 className="text-sm font-bold text-zinc-300">Export Journal Data</h2>
         </div>
-        <p className="text-xs text-zinc-400 leading-relaxed">
-          Download your complete daily reflections history for offline backup or analytical review.
+        <p className="text-xs text-zinc-400 leading-relaxed font-handwritten text-lg">
+          Export your handcrafted reflection entries for backup or offline review.
         </p>
         <div className="flex space-x-3 pt-1">
           <button
@@ -452,7 +457,7 @@ export default function QuestionsSettings() {
             disabled={exporting}
             className="flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-zinc-950 border border-zinc-850 hover:border-zinc-700 text-zinc-200 transition-colors cursor-pointer disabled:opacity-50"
           >
-            <FileSpreadsheet className="w-4 h-4 text-teal-400" />
+            <FileSpreadsheet className="w-4 h-4" style={{ color: 'var(--accent)' }} />
             <span>Export CSV</span>
           </button>
           <button
@@ -460,28 +465,28 @@ export default function QuestionsSettings() {
             disabled={exporting}
             className="flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-zinc-950 border border-zinc-850 hover:border-zinc-700 text-zinc-200 transition-colors cursor-pointer disabled:opacity-50"
           >
-            <FileCode className="w-4 h-4 text-teal-400" />
+            <FileCode className="w-4 h-4" style={{ color: 'var(--accent)' }} />
             <span>Export JSON</span>
           </button>
         </div>
       </div>
 
       {/* Add new question form */}
-      <div className="glass-panel p-5 rounded-2xl border border-zinc-850 bg-zinc-900/10 space-y-4">
+      <div className="craft-card p-5 space-y-4">
         <h2 className="text-sm font-bold text-zinc-300">
-          Add Custom Prompt
+          Add Custom Journal Prompt
         </h2>
         <form onSubmit={handleAddQuestion} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="sm:col-span-2 space-y-1">
-              <label className="block text-xs font-semibold text-zinc-500 font-mono uppercase tracking-wider pl-0.5">Question Prompt text</label>
+              <label className="block text-xs font-semibold text-zinc-500 font-mono uppercase tracking-wider pl-0.5">Prompt text</label>
               <input
                 type="text"
                 required
                 placeholder="e.g. Did you read at least 10 pages today?"
                 value={newPrompt}
                 onChange={(e) => setNewPrompt(e.target.value)}
-                className="w-full px-3 py-2.5 bg-zinc-950/65 border border-zinc-850 rounded-xl text-zinc-200 placeholder-zinc-650 focus:outline-none focus:ring-1 focus:ring-teal-450 focus:border-teal-450 text-sm"
+                className="w-full px-3 py-2.5 bg-zinc-950/65 border border-zinc-850 rounded-xl text-zinc-200 placeholder-zinc-650 focus:outline-none text-sm font-serif-journal"
               />
             </div>
 
@@ -490,7 +495,7 @@ export default function QuestionsSettings() {
               <select
                 value={newType}
                 onChange={(e) => setNewType(e.target.value)}
-                className="w-full px-3 py-2.5 bg-zinc-950/65 border border-zinc-850 rounded-xl text-zinc-200 focus:outline-none focus:ring-1 focus:ring-teal-450 focus:border-teal-450 text-sm cursor-pointer"
+                className="w-full px-3 py-2.5 bg-zinc-950/65 border border-zinc-850 rounded-xl text-zinc-200 focus:outline-none text-sm cursor-pointer"
               >
                 <option value="boolean">Yes / No</option>
                 <option value="number">Numeric Count</option>
@@ -512,9 +517,10 @@ export default function QuestionsSettings() {
                     key={item.name}
                     type="button"
                     onClick={() => setNewIcon(item.name)}
+                    style={isSelected ? { backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-border)', color: 'var(--accent)' } : {}}
                     className={`p-2.5 rounded-lg border transition-all flex items-center justify-center cursor-pointer ${
                       isSelected
-                        ? 'bg-teal-500/10 border-teal-500/35 text-teal-450 scale-105'
+                        ? 'scale-105'
                         : 'bg-zinc-950/20 border-transparent text-zinc-500 hover:text-zinc-350 hover:bg-zinc-900/60'
                     }`}
                     title={item.label}
@@ -529,10 +535,11 @@ export default function QuestionsSettings() {
           <button
             type="submit"
             disabled={saving}
-            className="glow-btn px-4 py-2.5 bg-gradient-to-r from-teal-400 to-emerald-400 text-zinc-950 font-bold text-sm rounded-xl hover:opacity-95 shadow shadow-teal-500/10 transition-opacity flex justify-center items-center space-x-1 cursor-pointer w-full sm:w-auto"
+            style={{ background: 'var(--accent-gradient)', color: '#09090b' }}
+            className="glow-btn px-4 py-2.5 font-bold text-sm rounded-xl hover:opacity-95 shadow transition-opacity flex justify-center items-center space-x-1 cursor-pointer w-full sm:w-auto"
           >
-            <Plus className="w-4 h-4 text-zinc-950" />
-            <span>Create Prompt</span>
+            <Plus className="w-4 h-4" />
+            <span className="font-handwritten text-lg font-bold">Create Prompt ✒️</span>
           </button>
         </form>
       </div>
@@ -547,7 +554,7 @@ export default function QuestionsSettings() {
           <button
             type="button"
             onClick={handleResetDefaults}
-            className="flex items-center space-x-1 text-[10px] font-mono text-zinc-450 hover:text-teal-400 transition-colors cursor-pointer"
+            className="flex items-center space-x-1 text-[10px] font-mono text-zinc-450 hover:text-zinc-200 transition-colors cursor-pointer"
           >
             <RotateCcw className="w-3 h-3" />
             <span>Restore Defaults</span>
@@ -555,8 +562,8 @@ export default function QuestionsSettings() {
         </div>
 
         {questions.length === 0 ? (
-          <div className="glass-panel p-6 rounded-2xl text-center border-zinc-850 text-zinc-450 text-sm">
-            You don't have any prompts yet. Add one using the panel above!
+          <div className="craft-card p-6 text-center border-zinc-850 text-zinc-450 text-sm font-handwritten text-xl">
+            You don't have any prompts yet. Create one above!
           </div>
         ) : (
           <div className="space-y-3">
@@ -575,7 +582,7 @@ export default function QuestionsSettings() {
               return (
                 <div 
                   key={q.id} 
-                  className={`glass-panel p-4 rounded-xl border transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                  className={`craft-card p-4 border transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
                     q.is_active 
                       ? 'border-zinc-850 bg-zinc-900/10' 
                       : 'border-zinc-850/40 bg-zinc-950/40 opacity-55'
@@ -588,11 +595,12 @@ export default function QuestionsSettings() {
                           type="text"
                           value={editingPrompt}
                           onChange={(e) => setEditingPrompt(e.target.value)}
-                          className="flex-1 px-3 py-1.5 bg-zinc-950 border border-zinc-850 rounded-xl text-zinc-200 focus:outline-none focus:ring-1 focus:ring-teal-450 focus:border-teal-450 text-sm font-medium"
+                          className="flex-1 px-3 py-1.5 bg-zinc-950 border border-zinc-850 rounded-xl text-zinc-200 focus:outline-none text-sm font-medium"
                         />
                         <button
                           onClick={() => handleSaveEdit(q.id)}
-                          className="p-2 bg-teal-500/10 hover:bg-teal-500/20 text-teal-400 border border-teal-500/20 rounded-lg cursor-pointer transition-colors"
+                          style={{ backgroundColor: 'var(--accent-glow)', color: 'var(--accent)', borderColor: 'var(--accent-border)' }}
+                          className="p-2 border rounded-lg cursor-pointer transition-colors"
                           title="Save"
                         >
                           <Check className="w-4 h-4" />
@@ -611,7 +619,7 @@ export default function QuestionsSettings() {
                           <IconComponent className="w-4.5 h-4.5" />
                         </div>
                         <div className="space-y-1">
-                          <p className="text-sm font-bold text-zinc-200 leading-snug">{q.prompt}</p>
+                          <p className="text-sm font-bold text-zinc-200 leading-snug font-serif-journal">{q.prompt}</p>
                           <span className="inline-block px-2 py-0.5 bg-zinc-950/80 border border-zinc-900 rounded text-[10px] text-zinc-500 font-mono">
                             {typeLabels[q.type]}
                           </span>
@@ -650,8 +658,8 @@ export default function QuestionsSettings() {
                         onClick={() => handleToggleActive(q.id, q.is_active)}
                         className={`p-2 border rounded-lg cursor-pointer transition-colors ${
                           q.is_active 
-                            ? 'bg-zinc-955 border-zinc-850 text-teal-400 hover:text-teal-350' 
-                            : 'bg-zinc-950 border-zinc-850/50 text-zinc-600 hover:text-zinc-400'
+                            ? 'bg-zinc-955 border-zinc-850 text-teal-400' 
+                            : 'bg-zinc-950 border-zinc-850/50 text-zinc-600'
                         }`}
                         title={q.is_active ? 'Disable question' : 'Enable question'}
                       >
