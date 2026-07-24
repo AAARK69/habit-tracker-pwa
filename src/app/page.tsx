@@ -326,44 +326,34 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      {/* Streamlined Header */}
+      <div className="flex items-center justify-between gap-4">
         <div className="space-y-1">
-          <div className="flex items-center space-x-2">
-            <PenTool className="w-4 h-4" style={{ color: 'var(--accent)' }} />
-            <span className="text-xs uppercase tracking-widest font-extrabold font-ios-mono" style={{ color: 'var(--accent)' }}>
-              {activeThemeObj.nicheTag} • {isDesktop ? '💻 16:9 PC Studio' : '📱 Mobile PWA'}
-            </span>
-          </div>
           <h1 className="text-3xl font-extrabold text-zinc-50 tracking-tight font-ios-serif">
             {isEditing ? "Today's Reflections" : "Day Complete 🎯"}
           </h1>
-          <p className="text-base text-zinc-400 font-handwritten text-xl leading-snug">
+          <p className="text-sm text-zinc-400 font-handwritten text-xl">
             {isEditing 
               ? activeThemeObj.nicheQuote
               : "All habits logged & stamped. Take a rest and enjoy real life!"}
           </p>
         </div>
 
-        {/* Dynamic iOS Rounded Streak & Share Buttons */}
-        <div className="flex flex-col items-end space-y-1.5 shrink-0">
-          <div className="craft-card px-3.5 py-2 border border-amber-500/20 bg-amber-500/5 flex items-center space-x-2 shadow-md">
-            <Flame className="w-5 h-5 text-amber-400 animate-pulse" />
-            <div className="text-right">
-              <span className="block text-xs font-black text-amber-300 font-ios-rounded leading-none">
-                {streakInfo.currentStreak} {streakInfo.currentStreak === 1 ? 'DAY' : 'DAYS'}
-              </span>
-              <span className="text-[9px] text-amber-500/80 font-ios-mono font-bold">STREAK</span>
-            </div>
+        {/* Dynamic Streak Badge */}
+        <div className="flex items-center space-x-2 shrink-0">
+          <div className="craft-card px-3.5 py-1.5 border border-amber-500/20 bg-amber-500/5 flex items-center space-x-2 shadow-sm">
+            <Flame className="w-4 h-4 text-amber-400 animate-pulse" />
+            <span className="text-xs font-extrabold text-amber-300 font-ios-rounded">
+              {streakInfo.currentStreak} {streakInfo.currentStreak === 1 ? 'DAY' : 'DAYS'}
+            </span>
           </div>
-
           <button
             onClick={handleShareStreak}
             style={{ color: 'var(--accent)', backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-border)' }}
-            className="flex items-center space-x-1 text-[10px] font-ios-mono px-2 py-0.5 rounded-full border hover:opacity-80 transition-opacity cursor-pointer"
+            className="p-1.5 rounded-xl border hover:opacity-80 transition-opacity cursor-pointer text-xs font-ios-mono"
+            title="Share Streak"
           >
-            <Share2 className="w-3 h-3" />
-            <span>{copiedShare ? 'Copied!' : 'Share'}</span>
+            <Share2 className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
@@ -371,101 +361,21 @@ export default function Dashboard() {
       {/* Main Grid */}
       <div className={`grid gap-6 ${isDesktop ? 'grid-cols-12' : 'grid-cols-1'}`}>
         
-        {/* Left Column (Desktop 16:9 Sidebar Stats & Badges Vault) */}
+        {/* Left Column (Desktop 16:9 Sidebar Stats) */}
         {isDesktop && (
           <div className="col-span-4 space-y-5">
-            {/* XP & Level Progress Card */}
-            <div className="craft-card p-5 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Trophy className="w-4.5 h-4.5 text-amber-400" />
-                  <span className="text-xs font-black text-zinc-150 font-ios-rounded">
-                    Level {levelInfo.level}: <span className="font-handwritten text-lg" style={{ color: 'var(--accent)' }}>{levelInfo.title}</span>
-                  </span>
-                </div>
-                <span className="text-xs font-bold text-zinc-450 font-ios-mono">
-                  {levelInfo.totalXP} XP
-                </span>
-              </div>
-
-              <div className="w-full h-2.5 bg-zinc-950 rounded-full overflow-hidden border border-zinc-850">
-                <div 
-                  className="h-full transition-all duration-500 rounded-full"
-                  style={{ width: `${levelInfo.progressPercent}%`, background: 'var(--accent-gradient)' }}
-                ></div>
-              </div>
-            </div>
-
-            {/* Achievement Badges Vault Preview (Streamlined replacement for redundant matrix) */}
-            <div className="craft-card p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-1.5 text-xs font-ios-mono font-bold text-zinc-200">
-                  <Award className="w-4 h-4 text-amber-400" />
-                  <span>Achievement Badges</span>
-                </div>
-                <span className="text-[10px] text-zinc-500 font-ios-mono">
-                  {badges.filter((b) => b.unlocked).length} / {badges.length} Unlocked
-                </span>
-              </div>
-
-              <div className="grid grid-cols-4 gap-2">
-                {badges.map((b) => (
-                  <div
-                    key={b.id}
-                    className={`p-2.5 rounded-xl border text-center transition-all ${
-                      b.unlocked
-                        ? 'bg-amber-500/10 border-amber-500/30 text-amber-300 shadow-sm'
-                        : 'bg-zinc-950/40 border-zinc-850/50 text-zinc-650 opacity-40'
-                    }`}
-                    title={`${b.name}: ${b.description}`}
-                  >
-                    <span className="text-lg block">{b.icon}</span>
-                    <span className="text-[9px] font-bold font-ios-mono truncate block mt-0.5">{b.name}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Streak Grace Protection Card */}
-            <div className="craft-card p-4 space-y-2 border-zinc-850/80">
-              <div className="flex items-center justify-between text-xs font-ios-mono">
-                <span className="flex items-center space-x-1.5 text-zinc-300 font-ios-sans font-medium">
-                  <ShieldCheck className="w-4 h-4" style={{ color: 'var(--accent)' }} />
-                  <span>Streak Grace Freezes</span>
-                </span>
-                <span className="font-extrabold text-amber-400 font-ios-rounded">{streakInfo.freezesRemaining} / 2 Freezes</span>
-              </div>
-              <p className="text-[11px] text-zinc-500 font-ios-mono">
-                Automatic protection active. Missing 1 day won't break your streak chain.
-              </p>
-            </div>
-
-            {/* Adaptive Micro-Insight */}
-            {microInsight && (
-              <div 
-                className="p-4 rounded-xl border text-xs text-zinc-300 flex items-start space-x-2.5 craft-card"
-                style={{ backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-border)' }}
-              >
-                <Lightbulb className="w-4 h-4 shrink-0 mt-0.5" style={{ color: 'var(--accent)' }} />
-                <span className="leading-relaxed font-ios-sans">{microInsight}</span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Mobile Level Card */}
-        {!isDesktop && (
-          <div className="col-span-1 space-y-4">
-            <div className="craft-card p-4 space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
+            {/* Level Progress Card */}
+            <div className="craft-card p-4 space-y-2.5">
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center space-x-1.5">
                   <Trophy className="w-4 h-4 text-amber-400" />
-                  <span className="text-xs font-black text-zinc-150 font-ios-rounded">
-                    Level {levelInfo.level}: <span className="font-handwritten text-lg" style={{ color: 'var(--accent)' }}>{levelInfo.title}</span>
+                  <span className="font-bold text-zinc-200 font-ios-rounded">
+                    Level {levelInfo.level}: <span style={{ color: 'var(--accent)' }}>{levelInfo.title}</span>
                   </span>
                 </div>
-                <span className="text-xs font-bold text-zinc-450 font-ios-mono">{levelInfo.totalXP} XP</span>
+                <span className="font-mono text-zinc-400">{levelInfo.totalXP} XP</span>
               </div>
+
               <div className="w-full h-2 bg-zinc-950 rounded-full overflow-hidden border border-zinc-850">
                 <div 
                   className="h-full transition-all duration-500 rounded-full"
@@ -474,12 +384,54 @@ export default function Dashboard() {
               </div>
             </div>
 
+            {/* Achievement Badges Vault */}
+            <div className="craft-card p-4 space-y-3">
+              <div className="flex items-center justify-between text-xs font-ios-mono font-bold">
+                <div className="flex items-center space-x-1.5 text-zinc-200">
+                  <Award className="w-4 h-4 text-amber-400" />
+                  <span>Achievement Vault</span>
+                </div>
+                <span className="text-[10px] text-zinc-500">
+                  {badges.filter((b) => b.unlocked).length} / {badges.length} Unlocked
+                </span>
+              </div>
+
+              <div className="grid grid-cols-4 gap-2">
+                {badges.map((b) => (
+                  <div
+                    key={b.id}
+                    className={`p-2 rounded-xl border text-center transition-all ${
+                      b.unlocked
+                        ? 'bg-amber-500/10 border-amber-500/30 text-amber-300 shadow-sm'
+                        : 'bg-zinc-950/40 border-zinc-850/50 text-zinc-650 opacity-40'
+                    }`}
+                    title={`${b.name}: ${b.description}`}
+                  >
+                    <span className="text-base block">{b.icon}</span>
+                    <span className="text-[9px] font-bold font-ios-mono truncate block mt-0.5">{b.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Streak Grace Freezes */}
+            <div className="craft-card p-3.5 space-y-1 text-xs font-ios-mono">
+              <div className="flex items-center justify-between">
+                <span className="flex items-center space-x-1 text-zinc-300">
+                  <ShieldCheck className="w-3.5 h-3.5" style={{ color: 'var(--accent)' }} />
+                  <span>Streak Protection</span>
+                </span>
+                <span className="font-bold text-amber-400">{streakInfo.freezesRemaining} Freezes Left</span>
+              </div>
+            </div>
+
+            {/* Micro Insight */}
             {microInsight && (
               <div 
-                className="p-3.5 rounded-xl border text-xs text-zinc-300 flex items-center space-x-2.5"
+                className="p-3.5 rounded-xl border text-xs text-zinc-300 flex items-start space-x-2.5 craft-card"
                 style={{ backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-border)' }}
               >
-                <Lightbulb className="w-4 h-4 shrink-0" style={{ color: 'var(--accent)' }} />
+                <Lightbulb className="w-4 h-4 shrink-0 mt-0.5" style={{ color: 'var(--accent)' }} />
                 <span className="leading-snug font-ios-sans">{microInsight}</span>
               </div>
             )}
@@ -487,36 +439,33 @@ export default function Dashboard() {
         )}
 
         {/* Main Reflection Form / Stopping Cue Column */}
-        <div className={isDesktop ? 'col-span-8 space-y-6' : 'col-span-1 space-y-6'}>
+        <div className={isDesktop ? 'col-span-8 space-y-5' : 'col-span-1 space-y-5'}>
           
           {streakInfo.isMilestone && isEditing && (
-            <div className="p-4 rounded-xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 to-teal-500/10 text-amber-200 text-xs flex items-center space-x-3 shadow-lg animate-bounce">
-              <Award className="w-6 h-6 text-amber-400 shrink-0" />
+            <div className="p-3.5 rounded-xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 to-teal-500/10 text-amber-200 text-xs flex items-center space-x-3 shadow-md">
+              <Award className="w-5 h-5 text-amber-400 shrink-0" />
               <div>
-                <h4 className="font-extrabold text-sm text-amber-300 font-ios-rounded">{streakInfo.milestoneTitle}</h4>
-                <p className="text-zinc-400 text-[11px] mt-0.5 font-ios-sans">Unpredictable milestone unlocked! Keep your momentum chain unbroken.</p>
+                <h4 className="font-bold text-xs text-amber-300 font-ios-rounded">{streakInfo.milestoneTitle}</h4>
               </div>
             </div>
           )}
 
-          <NotificationToggle />
-
           {isEditing ? (
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Question Form Toolbar (Shuffle button) */}
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Question Form Toolbar */}
               {questions.length > 1 && (
                 <div className="flex items-center justify-between px-1">
                   <span className="text-xs font-bold text-zinc-500 font-ios-mono uppercase tracking-widest">
-                    Questionnaire Prompts ({questions.length})
+                    Daily Questionnaire ({questions.length})
                   </span>
                   <button
                     type="button"
                     onClick={handleShuffleQuestions}
                     style={{ color: 'var(--accent)', backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-border)' }}
-                    className="flex items-center space-x-1.5 text-xs font-ios-mono font-bold px-3 py-1.5 rounded-xl border hover:opacity-80 transition-opacity cursor-pointer shadow-sm"
+                    className="flex items-center space-x-1 text-xs font-ios-mono font-bold px-2.5 py-1 rounded-xl border hover:opacity-80 transition-opacity cursor-pointer"
                   >
-                    <Shuffle className="w-3.5 h-3.5" />
-                    <span>Shuffle Order 🎲</span>
+                    <Shuffle className="w-3 h-3" />
+                    <span>Shuffle 🎲</span>
                   </button>
                 </div>
               )}
@@ -540,19 +489,19 @@ export default function Dashboard() {
                       return (
                         <div 
                           key={q.id} 
-                          className={`craft-card p-5 space-y-4 transition-all duration-200 hover:border-zinc-800 ${
+                          className={`craft-card p-4 space-y-3 transition-all duration-200 ${
                             isFullWidth ? 'col-span-full' : ''
                           }`}
                         >
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3.5">
+                            <div className="flex items-center space-x-3">
                               <div 
-                                className="p-2 rounded-xl border shrink-0"
+                                className="p-1.5 rounded-xl border shrink-0"
                                 style={{ backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-border)', color: 'var(--accent)' }}
                               >
-                                <IconComponent className="w-4.5 h-4.5" />
+                                <IconComponent className="w-4 h-4" />
                               </div>
-                              <label className="block text-sm font-bold text-zinc-200 font-ios-sans">
+                              <label className="block text-xs font-bold text-zinc-200 font-ios-sans">
                                 {q.prompt}
                               </label>
                             </div>
@@ -561,44 +510,44 @@ export default function Dashboard() {
                               <button
                                 type="button"
                                 onClick={() => toggleVoiceJournaling(q.id)}
-                                className={`p-2 rounded-xl border transition-all cursor-pointer ${
+                                className={`p-1.5 rounded-xl border transition-all cursor-pointer ${
                                   isListening[q.id]
                                     ? 'bg-red-500/20 border-red-500/40 text-red-400 animate-pulse'
                                     : 'bg-zinc-900/60 border-zinc-850 text-zinc-400 hover:text-zinc-200'
                                 }`}
-                                title="Voice Dictation (Talk to Journal)"
+                                title="Voice Dictation"
                               >
-                                {isListening[q.id] ? <MicOff className="w-4 h-4 text-red-400" /> : <Mic className="w-4 h-4" />}
+                                {isListening[q.id] ? <MicOff className="w-3.5 h-3.5 text-red-400" /> : <Mic className="w-3.5 h-3.5" />}
                               </button>
                             )}
                           </div>
 
-                          {/* One-Tap iOS Rounded Yes/No Buttons */}
+                          {/* One-Tap Yes/No Buttons */}
                           {q.type === 'boolean' && (
-                            <div className="flex space-x-3 font-ios-rounded">
+                            <div className="flex space-x-2 font-ios-rounded">
                               <button
                                 type="button"
                                 onClick={() => handleAnswerChange(q.id, true)}
                                 style={value === true ? { backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-border)', color: 'var(--accent)' } : {}}
-                                className={`flex-1 py-2.5 rounded-xl text-xs font-black border transition-all duration-300 flex items-center justify-center space-x-1.5 cursor-pointer ${
+                                className={`flex-1 py-2 rounded-xl text-xs font-extrabold border transition-all flex items-center justify-center space-x-1 cursor-pointer ${
                                   value === true
-                                    ? 'shadow-lg'
-                                    : 'bg-zinc-900/40 border-zinc-850 text-zinc-450 hover:text-zinc-200 hover:bg-zinc-900/80 hover:border-zinc-800'
+                                    ? 'shadow'
+                                    : 'bg-zinc-900/40 border-zinc-850 text-zinc-450 hover:text-zinc-200'
                                 }`}
                               >
-                                <Check className={`w-3.5 h-3.5 transition-transform ${value === true ? 'scale-110' : ''}`} />
+                                <Check className={`w-3.5 h-3.5 ${value === true ? 'scale-110' : ''}`} />
                                 <span>Yes</span>
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleAnswerChange(q.id, false)}
-                                className={`flex-1 py-2.5 rounded-xl text-xs font-black border transition-all duration-300 flex items-center justify-center space-x-1.5 cursor-pointer ${
+                                className={`flex-1 py-2 rounded-xl text-xs font-extrabold border transition-all flex items-center justify-center space-x-1 cursor-pointer ${
                                   value === false
-                                    ? 'bg-red-500/10 border-red-500/40 text-red-400 shadow-lg'
-                                    : 'bg-zinc-900/40 border-zinc-850 text-zinc-450 hover:text-zinc-200 hover:bg-zinc-900/80 hover:border-zinc-800'
+                                    ? 'bg-red-500/10 border-red-500/40 text-red-400 shadow'
+                                    : 'bg-zinc-900/40 border-zinc-850 text-zinc-450 hover:text-zinc-200'
                                 }`}
                               >
-                                <X className={`w-3.5 h-3.5 transition-transform ${value === false ? 'scale-110' : ''}`} />
+                                <X className={`w-3.5 h-3.5 ${value === false ? 'scale-110' : ''}`} />
                                 <span>No</span>
                               </button>
                             </div>
@@ -612,18 +561,17 @@ export default function Dashboard() {
                                 onChange={(e) => handleAnswerChange(q.id, e.target.value === '' ? '' : Number(e.target.value))}
                                 placeholder="Enter quantity"
                                 required
-                                className="w-full px-3.5 py-2.5 bg-zinc-950/65 border border-zinc-850 rounded-xl text-zinc-200 placeholder-zinc-650 focus:outline-none text-sm font-ios-mono"
+                                className="w-full px-3 py-2 bg-zinc-950/70 border border-zinc-850 rounded-xl text-zinc-200 placeholder-zinc-650 focus:outline-none text-xs font-ios-mono"
                                 style={{ borderColor: value !== '' ? 'var(--accent-border)' : '' }}
                               />
                             </div>
                           )}
 
-                          {/* 1-5 Circular Touch Rating Dials in SF Pro Rounded */}
+                          {/* 1-5 Circular Touch Rating Dials */}
                           {q.type === 'scale_1_to_5' && (
-                            <div className="space-y-3">
+                            <div className="space-y-2">
                               <div className="flex justify-between items-center px-1 font-ios-rounded">
                                 {[1, 2, 3, 4, 5].map((num) => {
-                                  const labels = ['Terrible', 'Bad', 'Neutral', 'Good', 'Excellent'];
                                   const isSelected = value === num;
                                   return (
                                     <button
@@ -631,21 +579,16 @@ export default function Dashboard() {
                                       type="button"
                                       onClick={() => handleAnswerChange(q.id, num)}
                                       style={isSelected ? { backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-border)', color: 'var(--accent)' } : {}}
-                                      className={`w-10 h-10 rounded-full text-xs font-black border transition-all duration-350 flex items-center justify-center cursor-pointer ${
+                                      className={`w-9 h-9 rounded-full text-xs font-black border transition-all flex items-center justify-center cursor-pointer ${
                                         isSelected
-                                          ? 'shadow-md scale-110'
-                                          : 'bg-zinc-900/40 border-zinc-850 text-zinc-500 hover:text-zinc-300 hover:border-zinc-800'
+                                          ? 'shadow scale-105'
+                                          : 'bg-zinc-900/40 border-zinc-850 text-zinc-500 hover:text-zinc-300'
                                       }`}
-                                      title={labels[num - 1]}
                                     >
                                       {num}
                                     </button>
                                   );
                                 })}
-                              </div>
-                              <div className="flex justify-between text-[10px] text-zinc-550 px-1 font-ios-mono uppercase tracking-wider">
-                                <span>Terrible</span>
-                                <span>Excellent</span>
                               </div>
                             </div>
                           )}
@@ -657,8 +600,8 @@ export default function Dashboard() {
                                 onChange={(e) => handleAnswerChange(q.id, e.target.value)}
                                 placeholder="Reflect on your day... (Tap mic icon above to dictate)"
                                 required
-                                rows={3}
-                                className="w-full px-3.5 py-3 bg-zinc-950/65 border border-zinc-850 rounded-xl text-zinc-205 placeholder-zinc-650 focus:outline-none text-sm font-ios-serif leading-relaxed resize-none"
+                                rows={2.5}
+                                className="w-full px-3 py-2.5 bg-zinc-950/70 border border-zinc-850 rounded-xl text-zinc-200 placeholder-zinc-650 focus:outline-none text-xs font-ios-serif leading-relaxed resize-none"
                               />
                             </div>
                           )}
@@ -671,12 +614,12 @@ export default function Dashboard() {
                     type="submit"
                     disabled={submitting}
                     style={{ background: 'var(--accent-gradient)', color: '#09090b' }}
-                    className="glow-btn w-full py-3.5 font-bold text-sm rounded-xl hover:opacity-95 shadow-lg transition-opacity flex justify-center items-center space-x-2 cursor-pointer disabled:opacity-50"
+                    className="glow-btn w-full py-3 font-bold text-xs rounded-xl hover:opacity-95 shadow-lg transition-opacity flex justify-center items-center space-x-2 cursor-pointer disabled:opacity-50 font-ios-sans"
                   >
                     {submitting ? (
-                      <Loader2 className="w-5 h-5 animate-spin text-zinc-950" />
+                      <Loader2 className="w-4 h-4 animate-spin text-zinc-950" />
                     ) : (
-                      <span className="font-handwritten text-xl font-bold tracking-wide">
+                      <span className="font-handwritten text-lg font-bold">
                         {activeThemeObj.nicheStamp} (+70 XP)
                       </span>
                     )}
@@ -687,36 +630,36 @@ export default function Dashboard() {
           ) : (
             <div className="space-y-4 animate-fade-in">
               <div 
-                className="craft-card p-6 border flex flex-col items-center text-center space-y-4 shadow-xl relative overflow-hidden"
+                className="craft-card p-6 border flex flex-col items-center text-center space-y-3 shadow-xl relative overflow-hidden"
                 style={{ borderColor: 'var(--accent-border)', backgroundColor: 'rgba(18, 19, 22, 0.85)' }}
               >
                 <div 
-                  className="w-14 h-14 rounded-full border flex items-center justify-center shadow-inner"
+                  className="w-12 h-12 rounded-full border flex items-center justify-center shadow-inner"
                   style={{ backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-border)', color: 'var(--accent)' }}
                 >
-                  <CheckCircle className="w-8 h-8" />
+                  <CheckCircle className="w-7 h-7" />
                 </div>
                 
-                <div className="space-y-1.5 max-w-md">
+                <div className="space-y-1 max-w-md">
                   <span 
                     className="text-[10px] font-ios-mono font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full border"
                     style={{ backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-border)', color: 'var(--accent)' }}
                   >
                     {activeThemeObj.nicheStamp}
                   </span>
-                  <h3 className="text-2xl font-black text-zinc-100 font-ios-serif">Day Complete 🎯</h3>
-                  <p className="text-zinc-300 text-xl leading-relaxed font-handwritten">
+                  <h3 className="text-xl font-black text-zinc-100 font-ios-serif">Day Complete 🎯</h3>
+                  <p className="text-zinc-300 text-lg leading-relaxed font-handwritten">
                     "{motivationalQuote || activeThemeObj.nicheQuote}"
                   </p>
                 </div>
 
-                <div className="flex items-center space-x-3 pt-2 font-ios-sans">
+                <div className="flex items-center space-x-3 pt-1 font-ios-sans">
                   <button
                     onClick={() => {
                       triggerHaptic(10);
                       setIsEditing(true);
                     }}
-                    className="flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold bg-zinc-950 hover:bg-zinc-900 border border-zinc-850 hover:border-zinc-800 transition-all text-zinc-300 cursor-pointer shadow shadow-black/60"
+                    className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-zinc-950 hover:bg-zinc-900 border border-zinc-850 hover:border-zinc-800 transition-all text-zinc-300 cursor-pointer shadow"
                   >
                     <Edit3 className="w-3.5 h-3.5 text-zinc-450" />
                     <span>Modify Entry</span>
@@ -725,7 +668,7 @@ export default function Dashboard() {
               </div>
 
               {/* Saved entries grid */}
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 <h4 className="text-xs font-bold text-zinc-550 uppercase tracking-widest pl-1 font-ios-mono">Your Saved Entries</h4>
                 <div className={`grid gap-3 ${isDesktop ? 'grid-cols-2' : 'grid-cols-1'}`}>
                   {questions.map((q) => {
@@ -736,24 +679,24 @@ export default function Dashboard() {
                     return (
                       <div 
                         key={q.id} 
-                        className={`craft-card p-4 border border-zinc-850/80 bg-zinc-900/5 flex flex-col justify-between space-y-2.5 ${
+                        className={`craft-card p-3.5 border border-zinc-850/80 bg-zinc-900/5 flex flex-col justify-between space-y-2 ${
                           isText ? 'col-span-full' : ''
                         }`}
                       >
-                        <div className="flex items-center space-x-3">
-                          <div className="p-1.5 rounded-lg bg-zinc-900/70 border border-zinc-850 text-zinc-400 shrink-0">
-                            <IconComponent className="w-4 h-4" />
+                        <div className="flex items-center space-x-2.5">
+                          <div className="p-1 rounded bg-zinc-900 border border-zinc-850 text-zinc-400 shrink-0">
+                            <IconComponent className="w-3.5 h-3.5" />
                           </div>
-                          <span className="text-sm font-semibold text-zinc-450 leading-tight font-ios-sans">{q.prompt}</span>
+                          <span className="text-xs font-semibold text-zinc-450 leading-tight font-ios-sans">{q.prompt}</span>
                         </div>
 
                         {q.type === 'text' ? (
-                          <div className="text-base font-handwritten bg-zinc-950/40 p-2.5 rounded-lg border border-zinc-900 flex items-start space-x-1.5 text-zinc-300 w-full">
-                            <MessageSquare className="w-3.5 h-3.5 text-zinc-500 shrink-0 mt-1" />
+                          <div className="text-sm font-handwritten bg-zinc-950/40 p-2 rounded-lg border border-zinc-900 flex items-start space-x-1.5 text-zinc-300 w-full">
+                            <MessageSquare className="w-3 h-3 text-zinc-500 shrink-0 mt-1" />
                             <p className="leading-relaxed whitespace-pre-wrap">{val || '-'}</p>
                           </div>
                         ) : (
-                          <span className="text-sm font-extrabold text-zinc-200 self-end font-ios-mono">
+                          <span className="text-xs font-extrabold text-zinc-200 self-end font-ios-mono">
                             {val === true ? 'Yes' : val === false ? 'No' : val === '' || val === null ? '-' : String(val)}
                           </span>
                         )}
