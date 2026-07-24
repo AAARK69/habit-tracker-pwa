@@ -11,6 +11,24 @@ export default function Navigation({ children }: { children: React.ReactNode }) 
   const pathname = usePathname();
   const { user, signOut } = useAuth();
   const { layoutMode, activeDevice, setLayoutMode } = useDeviceLayout();
+  const [isOnline, setIsOnline] = useState(true);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    setIsOnline(navigator.onLine);
+
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   if (pathname === '/login') {
     return <>{children}</>;
@@ -83,7 +101,7 @@ export default function Navigation({ children }: { children: React.ReactNode }) 
             {layoutMode === 'mobile' && <Smartphone className="w-3 h-3 text-teal-400" />}
             {layoutMode === 'desktop' && <Monitor className="w-3 h-3 text-cyan-400" />}
             <span className="font-bold text-[11px] hidden md:inline">
-              {layoutMode === 'auto' ? 'Auto' : layoutMode === 'mobile' ? 'Mobile' : '16:9 PC'}
+              {layoutMode === 'auto' ? 'Auto ⚡' : layoutMode === 'mobile' ? 'Mobile 📱' : '16:9 PC 💻'}
             </span>
           </button>
 
@@ -102,7 +120,7 @@ export default function Navigation({ children }: { children: React.ReactNode }) 
       {/* Page Content: Dynamically sizes based on activeDevice */}
       <main className={`flex-1 pb-24 sm:pb-12 w-full mx-auto p-4 sm:p-6 transition-all duration-300 ${
         activeDevice === 'desktop' 
-          ? 'max-w-6xl' 
+          ? 'max-w-7xl' 
           : 'max-w-md'
       }`}>
         {children}

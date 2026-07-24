@@ -12,13 +12,13 @@ interface DeviceLayoutContextType {
 
 const DeviceLayoutContext = createContext<DeviceLayoutContextType>({
   layoutMode: 'auto',
-  activeDevice: 'mobile',
+  activeDevice: 'desktop',
   setLayoutMode: () => {},
 });
 
 export function DeviceLayoutProvider({ children }: { children: React.ReactNode }) {
   const [layoutMode, setLayoutModeState] = useState<LayoutMode>('auto');
-  const [detectedDevice, setDetectedDevice] = useState<'mobile' | 'desktop'>('mobile');
+  const [detectedDevice, setDetectedDevice] = useState<'mobile' | 'desktop'>('desktop');
 
   useEffect(() => {
     const saved = (localStorage.getItem('reflect_layout_mode') as LayoutMode) || 'auto';
@@ -30,14 +30,11 @@ export function DeviceLayoutProvider({ children }: { children: React.ReactNode }
       const width = window.innerWidth;
       const height = window.innerHeight;
       const isPortrait = height > width;
-      const isNarrow = width < 768;
-      const hasTouch = window.matchMedia('(pointer: coarse)').matches;
-      const isMobileUA = /iPhone|iPad|iPod|Android|Mobile/i.test(navigator.userAgent);
+      const isPhoneUA = /iPhone|iPod|Android.*Mobile/i.test(navigator.userAgent);
 
-      // Reliable Mobile vs 16:9 Desktop Detection Logic:
-      // Mobile if width < 768px, or portrait orientation with touch, or mobile user-agent.
-      // Desktop if 16:9 widescreen or desktop viewport >= 768px.
-      if (isNarrow || (isPortrait && hasTouch) || isMobileUA) {
+      // PC Widescreen Desktop Mode vs Mobile PWA Mode
+      // Mobile if width < 768px OR (phone user agent AND portrait aspect ratio)
+      if (width < 768 || (isPhoneUA && isPortrait)) {
         setDetectedDevice('mobile');
       } else {
         setDetectedDevice('desktop');
