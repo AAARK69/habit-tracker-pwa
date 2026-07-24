@@ -1,0 +1,25 @@
+{
+  "name": "Habit & Reflection Tracker",
+  "short_name": "Reflect",
+  "description": "Customizable daily habit tracker and reflection journal with smart reminders.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#09090b",
+  "orientation": "portrait",
+  "categories": ["lifestyle", "productivity"],
+  "icons": [
+    {
+      "src": "/app_icon.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "/app_icon.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "maskable"
+    }
+  ]
+}
