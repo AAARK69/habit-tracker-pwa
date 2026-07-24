@@ -320,11 +320,11 @@ export default function Dashboard() {
         <div className="space-y-1">
           <div className="flex items-center space-x-2">
             <PenTool className="w-4 h-4" style={{ color: 'var(--accent)' }} />
-            <span className="text-xs uppercase tracking-widest font-extrabold font-mono" style={{ color: 'var(--accent)' }}>
+            <span className="text-xs uppercase tracking-widest font-extrabold font-ios-mono" style={{ color: 'var(--accent)' }}>
               {isDesktop ? '💻 16:9 Desktop Studio Mode' : '📱 Mobile PWA Mode'}
             </span>
           </div>
-          <h1 className="text-3xl font-extrabold text-zinc-50 tracking-tight font-serif-journal">
+          <h1 className="text-3xl font-extrabold text-zinc-50 tracking-tight font-ios-serif">
             {isEditing ? "Today's Reflections" : "Day Complete 🎯"}
           </h1>
           <p className="text-base text-zinc-400 font-handwritten text-xl leading-snug">
@@ -334,22 +334,22 @@ export default function Dashboard() {
           </p>
         </div>
 
-        {/* Dynamic Streak & Share Buttons */}
+        {/* Dynamic iOS Rounded Streak & Share Buttons */}
         <div className="flex flex-col items-end space-y-1.5 shrink-0">
           <div className="craft-card px-3.5 py-2 border border-amber-500/20 bg-amber-500/5 flex items-center space-x-2 shadow-md">
             <Flame className="w-5 h-5 text-amber-400 animate-pulse" />
             <div className="text-right">
-              <span className="block text-xs font-black text-amber-300 font-mono leading-none">
+              <span className="block text-xs font-black text-amber-300 font-ios-rounded leading-none">
                 {streakInfo.currentStreak} {streakInfo.currentStreak === 1 ? 'DAY' : 'DAYS'}
               </span>
-              <span className="text-[9px] text-amber-500/80 font-mono font-bold">STREAK</span>
+              <span className="text-[9px] text-amber-500/80 font-ios-mono font-bold">STREAK</span>
             </div>
           </div>
 
           <button
             onClick={handleShareStreak}
             style={{ color: 'var(--accent)', backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-border)' }}
-            className="flex items-center space-x-1 text-[10px] font-mono px-2 py-0.5 rounded-full border hover:opacity-80 transition-opacity cursor-pointer"
+            className="flex items-center space-x-1 text-[10px] font-ios-mono px-2 py-0.5 rounded-full border hover:opacity-80 transition-opacity cursor-pointer"
           >
             <Share2 className="w-3 h-3" />
             <span>{copiedShare ? 'Copied!' : 'Share'}</span>
@@ -368,11 +368,11 @@ export default function Dashboard() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <Trophy className="w-4.5 h-4.5 text-amber-400" />
-                  <span className="text-xs font-black text-zinc-150 font-mono">
+                  <span className="text-xs font-black text-zinc-150 font-ios-rounded">
                     Level {levelInfo.level}: <span className="font-handwritten text-lg" style={{ color: 'var(--accent)' }}>{levelInfo.title}</span>
                   </span>
                 </div>
-                <span className="text-xs font-bold text-zinc-450 font-mono">
+                <span className="text-xs font-bold text-zinc-450 font-ios-mono">
                   {levelInfo.totalXP} XP
                 </span>
               </div>
@@ -387,14 +387,14 @@ export default function Dashboard() {
 
             {/* Streak Grace Protection Card */}
             <div className="craft-card p-4 space-y-2 border-zinc-850/80">
-              <div className="flex items-center justify-between text-xs font-mono">
-                <span className="flex items-center space-x-1.5 text-zinc-300">
+              <div className="flex items-center justify-between text-xs font-ios-mono">
+                <span className="flex items-center space-x-1.5 text-zinc-300 font-ios-sans font-medium">
                   <ShieldCheck className="w-4 h-4" style={{ color: 'var(--accent)' }} />
                   <span>Streak Grace Freezes</span>
                 </span>
-                <span className="font-extrabold text-amber-400">{streakInfo.freezesRemaining} / 2 Freezes</span>
+                <span className="font-extrabold text-amber-400 font-ios-rounded">{streakInfo.freezesRemaining} / 2 Freezes</span>
               </div>
-              <p className="text-[11px] text-zinc-500 font-mono">
+              <p className="text-[11px] text-zinc-500 font-ios-mono">
                 Automatic protection active. Missing 1 day won't break your streak chain.
               </p>
             </div>
@@ -402,18 +402,18 @@ export default function Dashboard() {
             {/* 14-Day Consistency Matrix Sidebar Preview */}
             <div className="craft-card p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-1.5 text-xs font-mono font-bold text-zinc-200">
+                <div className="flex items-center space-x-1.5 text-xs font-ios-mono font-bold text-zinc-200">
                   <Activity className="w-3.5 h-3.5" style={{ color: 'var(--accent)' }} />
                   <span>14-Day Matrix Preview</span>
                 </div>
-                <span className="text-[10px] text-zinc-500 font-mono">{allLogDates.length} Check-ins</span>
+                <span className="text-[10px] text-zinc-500 font-ios-mono">{allLogDates.length} Check-ins</span>
               </div>
               <div className="grid grid-cols-7 gap-1.5">
                 {sidebarHeatmapDays.map((d) => (
                   <div
                     key={d.dateStr}
                     style={d.isLogged ? { backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-border)', color: 'var(--accent)' } : {}}
-                    className={`p-1.5 rounded-lg border text-center font-mono text-[10px] font-bold ${
+                    className={`p-1.5 rounded-lg border text-center font-ios-mono text-[10px] font-bold ${
                       d.isLogged ? 'shadow-sm' : 'bg-zinc-950/40 border-zinc-850/50 text-zinc-650'
                     }`}
                   >
@@ -430,24 +430,24 @@ export default function Dashboard() {
                 style={{ backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-border)' }}
               >
                 <Lightbulb className="w-4 h-4 shrink-0 mt-0.5" style={{ color: 'var(--accent)' }} />
-                <span className="leading-relaxed font-sans">{microInsight}</span>
+                <span className="leading-relaxed font-ios-sans">{microInsight}</span>
               </div>
             )}
           </div>
         )}
 
-        {/* Mobile Level Card (Visible only on Mobile) */}
+        {/* Mobile Level Card */}
         {!isDesktop && (
           <div className="col-span-1 space-y-4">
             <div className="craft-card p-4 space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <Trophy className="w-4 h-4 text-amber-400" />
-                  <span className="text-xs font-black text-zinc-150 font-mono">
+                  <span className="text-xs font-black text-zinc-150 font-ios-rounded">
                     Level {levelInfo.level}: <span className="font-handwritten text-lg" style={{ color: 'var(--accent)' }}>{levelInfo.title}</span>
                   </span>
                 </div>
-                <span className="text-xs font-bold text-zinc-450 font-mono">{levelInfo.totalXP} XP</span>
+                <span className="text-xs font-bold text-zinc-450 font-ios-mono">{levelInfo.totalXP} XP</span>
               </div>
               <div className="w-full h-2 bg-zinc-950 rounded-full overflow-hidden border border-zinc-850">
                 <div 
@@ -463,7 +463,7 @@ export default function Dashboard() {
                 style={{ backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-border)' }}
               >
                 <Lightbulb className="w-4 h-4 shrink-0" style={{ color: 'var(--accent)' }} />
-                <span className="leading-snug">{microInsight}</span>
+                <span className="leading-snug font-ios-sans">{microInsight}</span>
               </div>
             )}
           </div>
@@ -476,8 +476,8 @@ export default function Dashboard() {
             <div className="p-4 rounded-xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 to-teal-500/10 text-amber-200 text-xs flex items-center space-x-3 shadow-lg animate-bounce">
               <Award className="w-6 h-6 text-amber-400 shrink-0" />
               <div>
-                <h4 className="font-extrabold text-sm text-amber-300">{streakInfo.milestoneTitle}</h4>
-                <p className="text-zinc-400 text-[11px] mt-0.5">Unpredictable milestone unlocked! Keep your momentum chain unbroken.</p>
+                <h4 className="font-extrabold text-sm text-amber-300 font-ios-rounded">{streakInfo.milestoneTitle}</h4>
+                <p className="text-zinc-400 text-[11px] mt-0.5 font-ios-sans">Unpredictable milestone unlocked! Keep your momentum chain unbroken.</p>
               </div>
             </div>
           )}
@@ -517,7 +517,7 @@ export default function Dashboard() {
                               >
                                 <IconComponent className="w-4.5 h-4.5" />
                               </div>
-                              <label className="block text-sm font-bold text-zinc-200">
+                              <label className="block text-sm font-bold text-zinc-200 font-ios-sans">
                                 {q.prompt}
                               </label>
                             </div>
@@ -538,13 +538,14 @@ export default function Dashboard() {
                             )}
                           </div>
 
+                          {/* One-Tap iOS Rounded Yes/No Buttons */}
                           {q.type === 'boolean' && (
-                            <div className="flex space-x-3">
+                            <div className="flex space-x-3 font-ios-rounded">
                               <button
                                 type="button"
                                 onClick={() => handleAnswerChange(q.id, true)}
                                 style={value === true ? { backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-border)', color: 'var(--accent)' } : {}}
-                                className={`flex-1 py-2.5 rounded-xl text-xs font-bold border transition-all duration-300 flex items-center justify-center space-x-1.5 cursor-pointer ${
+                                className={`flex-1 py-2.5 rounded-xl text-xs font-black border transition-all duration-300 flex items-center justify-center space-x-1.5 cursor-pointer ${
                                   value === true
                                     ? 'shadow-lg'
                                     : 'bg-zinc-900/40 border-zinc-850 text-zinc-450 hover:text-zinc-200 hover:bg-zinc-900/80 hover:border-zinc-800'
@@ -556,7 +557,7 @@ export default function Dashboard() {
                               <button
                                 type="button"
                                 onClick={() => handleAnswerChange(q.id, false)}
-                                className={`flex-1 py-2.5 rounded-xl text-xs font-bold border transition-all duration-300 flex items-center justify-center space-x-1.5 cursor-pointer ${
+                                className={`flex-1 py-2.5 rounded-xl text-xs font-black border transition-all duration-300 flex items-center justify-center space-x-1.5 cursor-pointer ${
                                   value === false
                                     ? 'bg-red-500/10 border-red-500/40 text-red-400 shadow-lg'
                                     : 'bg-zinc-900/40 border-zinc-850 text-zinc-450 hover:text-zinc-200 hover:bg-zinc-900/80 hover:border-zinc-800'
@@ -569,22 +570,23 @@ export default function Dashboard() {
                           )}
 
                           {q.type === 'number' && (
-                            <div className="relative">
+                            <div className="relative font-ios-mono">
                               <input
                                 type="number"
                                 value={value ?? ''}
                                 onChange={(e) => handleAnswerChange(q.id, e.target.value === '' ? '' : Number(e.target.value))}
                                 placeholder="Enter quantity"
                                 required
-                                className="w-full px-3.5 py-2.5 bg-zinc-950/65 border border-zinc-850 rounded-xl text-zinc-200 placeholder-zinc-650 focus:outline-none text-sm font-mono"
+                                className="w-full px-3.5 py-2.5 bg-zinc-950/65 border border-zinc-850 rounded-xl text-zinc-200 placeholder-zinc-650 focus:outline-none text-sm font-ios-mono"
                                 style={{ borderColor: value !== '' ? 'var(--accent-border)' : '' }}
                               />
                             </div>
                           )}
 
+                          {/* 1-5 Circular Touch Rating Dials in SF Pro Rounded */}
                           {q.type === 'scale_1_to_5' && (
                             <div className="space-y-3">
-                              <div className="flex justify-between items-center px-1">
+                              <div className="flex justify-between items-center px-1 font-ios-rounded">
                                 {[1, 2, 3, 4, 5].map((num) => {
                                   const labels = ['Terrible', 'Bad', 'Neutral', 'Good', 'Excellent'];
                                   const isSelected = value === num;
@@ -594,7 +596,7 @@ export default function Dashboard() {
                                       type="button"
                                       onClick={() => handleAnswerChange(q.id, num)}
                                       style={isSelected ? { backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-border)', color: 'var(--accent)' } : {}}
-                                      className={`w-10 h-10 rounded-full text-xs font-extrabold border transition-all duration-350 flex items-center justify-center cursor-pointer ${
+                                      className={`w-10 h-10 rounded-full text-xs font-black border transition-all duration-350 flex items-center justify-center cursor-pointer ${
                                         isSelected
                                           ? 'shadow-md scale-110'
                                           : 'bg-zinc-900/40 border-zinc-850 text-zinc-500 hover:text-zinc-300 hover:border-zinc-800'
@@ -606,7 +608,7 @@ export default function Dashboard() {
                                   );
                                 })}
                               </div>
-                              <div className="flex justify-between text-[10px] text-zinc-550 px-1 font-mono uppercase tracking-wider">
+                              <div className="flex justify-between text-[10px] text-zinc-550 px-1 font-ios-mono uppercase tracking-wider">
                                 <span>Terrible</span>
                                 <span>Excellent</span>
                               </div>
@@ -621,7 +623,7 @@ export default function Dashboard() {
                                 placeholder="Reflect on your day... (Tap mic icon above to dictate)"
                                 required
                                 rows={3}
-                                className="w-full px-3.5 py-3 bg-zinc-950/65 border border-zinc-850 rounded-xl text-zinc-205 placeholder-zinc-650 focus:outline-none text-sm font-serif-journal leading-relaxed resize-none"
+                                className="w-full px-3.5 py-3 bg-zinc-950/65 border border-zinc-850 rounded-xl text-zinc-205 placeholder-zinc-650 focus:outline-none text-sm font-ios-serif leading-relaxed resize-none"
                               />
                             </div>
                           )}
@@ -660,18 +662,18 @@ export default function Dashboard() {
                 
                 <div className="space-y-1.5 max-w-md">
                   <span 
-                    className="text-[10px] font-mono font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full border"
+                    className="text-[10px] font-ios-mono font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full border"
                     style={{ backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-border)', color: 'var(--accent)' }}
                   >
                     Entry Stamped & Verified ✒️
                   </span>
-                  <h3 className="text-2xl font-black text-zinc-100 font-serif-journal">Day Complete 🎯</h3>
+                  <h3 className="text-2xl font-black text-zinc-100 font-ios-serif">Day Complete 🎯</h3>
                   <p className="text-zinc-300 text-xl leading-relaxed font-handwritten">
                     "{motivationalQuote || "You've successfully completed today's reflection. Get back to real life!"}"
                   </p>
                 </div>
 
-                <div className="flex items-center space-x-3 pt-2">
+                <div className="flex items-center space-x-3 pt-2 font-ios-sans">
                   <button
                     onClick={() => {
                       triggerHaptic(10);
@@ -685,9 +687,9 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* Render saved entries in 2-column widescreen grid on PC */}
+              {/* Saved entries grid */}
               <div className="space-y-3">
-                <h4 className="text-xs font-bold text-zinc-550 uppercase tracking-widest pl-1 font-mono">Your Saved Entries</h4>
+                <h4 className="text-xs font-bold text-zinc-550 uppercase tracking-widest pl-1 font-ios-mono">Your Saved Entries</h4>
                 <div className={`grid gap-3 ${isDesktop ? 'grid-cols-2' : 'grid-cols-1'}`}>
                   {questions.map((q) => {
                     const val = answers[q.id];
@@ -705,7 +707,7 @@ export default function Dashboard() {
                           <div className="p-1.5 rounded-lg bg-zinc-900/70 border border-zinc-850 text-zinc-400 shrink-0">
                             <IconComponent className="w-4 h-4" />
                           </div>
-                          <span className="text-sm font-semibold text-zinc-450 leading-tight">{q.prompt}</span>
+                          <span className="text-sm font-semibold text-zinc-450 leading-tight font-ios-sans">{q.prompt}</span>
                         </div>
 
                         {q.type === 'text' ? (
@@ -714,7 +716,7 @@ export default function Dashboard() {
                             <p className="leading-relaxed whitespace-pre-wrap">{val || '-'}</p>
                           </div>
                         ) : (
-                          <span className="text-sm font-extrabold text-zinc-200 self-end font-mono">
+                          <span className="text-sm font-extrabold text-zinc-200 self-end font-ios-mono">
                             {val === true ? 'Yes' : val === false ? 'No' : val === '' || val === null ? '-' : String(val)}
                           </span>
                         )}

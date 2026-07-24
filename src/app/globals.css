@@ -7,10 +7,13 @@
   --accent-glow: rgba(45, 212, 191, 0.15);
   --accent-border: rgba(45, 212, 191, 0.35);
   --accent-gradient: linear-gradient(135deg, #2dd4bf, #34d399);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-handwritten: var(--font-caveat);
-  --font-serif: var(--font-lora);
+
+  /* Native iOS System Font Stacks */
+  --font-ios-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "SF Pro", system-ui, var(--font-geist-sans), sans-serif;
+  --font-ios-rounded: "SF Pro Rounded", ui-rounded, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-ios-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, var(--font-geist-mono), monospace;
+  --font-ios-serif: ui-serif, "New York", Georgia, Cambria, var(--font-lora), serif;
+  --font-handwritten: var(--font-caveat), cursive;
 }
 
 [data-theme="cyan"] {
@@ -44,7 +47,7 @@
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), sans-serif;
+  font-family: var(--font-ios-sans);
   overflow-x: hidden;
   -webkit-tap-highlight-color: transparent;
 }
@@ -65,6 +68,27 @@ body {
   border-radius: 1.25rem;
 }
 
+/* iOS Font Utility Classes */
+.font-ios-sans {
+  font-family: var(--font-ios-sans);
+}
+
+.font-ios-rounded {
+  font-family: var(--font-ios-rounded);
+}
+
+.font-ios-mono {
+  font-family: var(--font-ios-mono);
+}
+
+.font-ios-serif {
+  font-family: var(--font-ios-serif);
+}
+
+.font-handwritten {
+  font-family: var(--font-handwritten), cursive;
+}
+
 /* Accent Utilities driven by dynamic theme variables */
 .theme-accent-color {
   color: var(--accent);
@@ -80,14 +104,6 @@ body {
 
 .theme-accent-gradient {
   background: var(--accent-gradient);
-}
-
-.font-handwritten {
-  font-family: var(--font-handwritten), cursive;
-}
-
-.font-serif-journal {
-  font-family: var(--font-serif), serif;
 }
 
 .glow-btn {

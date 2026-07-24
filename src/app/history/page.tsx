@@ -120,9 +120,9 @@ export default function HistoryPage() {
       <div className="space-y-1">
         <div className="flex items-center space-x-2">
           <Calendar className="w-4 h-4" style={{ color: 'var(--accent)' }} />
-          <span className="text-xs uppercase tracking-widest font-extrabold font-mono" style={{ color: 'var(--accent)' }}>Timeline</span>
+          <span className="text-xs uppercase tracking-widest font-extrabold font-ios-mono" style={{ color: 'var(--accent)' }}>Timeline</span>
         </div>
-        <h1 className="text-3xl font-extrabold text-zinc-50 tracking-tight font-serif-journal">
+        <h1 className="text-3xl font-extrabold text-zinc-50 tracking-tight font-ios-serif">
           Reflection History
         </h1>
         <p className="text-base text-zinc-400 font-handwritten text-xl leading-snug">
@@ -135,9 +135,9 @@ export default function HistoryPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Activity className="w-4 h-4" style={{ color: 'var(--accent)' }} />
-            <span className="text-xs font-extrabold text-zinc-200 uppercase tracking-widest font-mono">28-Day Consistency Matrix</span>
+            <span className="text-xs font-extrabold text-zinc-200 uppercase tracking-widest font-ios-mono">28-Day Consistency Matrix</span>
           </div>
-          <span className="text-[10px] text-zinc-500 font-mono">
+          <span className="text-[10px] text-zinc-500 font-ios-mono">
             {logs.length} Total Check-ins
           </span>
         </div>
@@ -154,8 +154,8 @@ export default function HistoryPage() {
               }`}
               title={`${day.dateStr}: ${day.isLogged ? 'Completed' : 'Missed'}`}
             >
-              <span className="text-[9px] font-bold font-mono opacity-80 uppercase">{day.dayName}</span>
-              <span className="text-xs font-black font-mono mt-0.5">{day.dayNum}</span>
+              <span className="text-[9px] font-bold font-ios-mono opacity-80 uppercase">{day.dayName}</span>
+              <span className="text-xs font-black font-ios-rounded mt-0.5">{day.dayNum}</span>
             </div>
           ))}
         </div>
@@ -184,10 +184,10 @@ export default function HistoryPage() {
                 {/* Entry Card */}
                 <div className="craft-card p-5 space-y-4 hover:border-zinc-800 transition-all duration-300 shadow">
                   <div className="flex justify-between items-center border-b border-zinc-850/65 pb-2.5">
-                    <span className="text-xs font-bold font-mono" style={{ color: 'var(--accent)' }}>
+                    <span className="text-xs font-bold font-ios-mono" style={{ color: 'var(--accent)' }}>
                       {formatDate(log.date)}
                     </span>
-                    <span className="text-[10px] text-zinc-550 font-mono">
+                    <span className="text-[10px] text-zinc-550 font-ios-mono">
                       Logged at {new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
@@ -215,23 +215,23 @@ export default function HistoryPage() {
                               <div className="p-1 rounded bg-zinc-900 border border-zinc-850 text-zinc-400 shrink-0">
                                 <IconComponent className="w-3.5 h-3.5" />
                               </div>
-                              <span className="block text-xs font-semibold text-zinc-450 leading-tight">
+                              <span className="block text-xs font-semibold text-zinc-450 leading-tight font-ios-sans">
                                 {prompt}
                               </span>
                             </div>
 
                             {/* Yes/No answer */}
                             {type === 'boolean' && (
-                              <div className="flex items-center mt-1">
+                              <div className="flex items-center mt-1 font-ios-rounded">
                                 {val === true ? (
                                   <span 
-                                    className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border"
+                                    className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black border"
                                     style={{ backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-border)', color: 'var(--accent)' }}
                                   >
                                     <Check className="w-3.5 h-3.5 mr-0.5" /> Yes
                                   </span>
                                 ) : val === false ? (
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-red-500/10 text-red-400 border border-red-500/20">
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black bg-red-500/10 text-red-400 border border-red-500/20">
                                     <X className="w-3.5 h-3.5 mr-0.5" /> No
                                   </span>
                                 ) : (
@@ -242,19 +242,19 @@ export default function HistoryPage() {
 
                             {/* Numeric answer */}
                             {type === 'number' && (
-                              <span className="text-sm font-bold text-zinc-200 font-mono mt-1 pl-0.5">
+                              <span className="text-sm font-bold text-zinc-200 font-ios-mono mt-1 pl-0.5">
                                 {val !== null && val !== undefined ? String(val) : '-'}
                               </span>
                             )}
 
                             {/* Scale rating */}
                             {type === 'scale_1_to_5' && (
-                              <div className="flex items-center space-x-1 mt-1 pl-0.5">
-                                <span className="text-sm font-extrabold font-mono" style={{ color: 'var(--accent)' }}>
+                              <div className="flex items-center space-x-1 mt-1 pl-0.5 font-ios-rounded">
+                                <span className="text-sm font-black font-ios-rounded text-lg" style={{ color: 'var(--accent)' }}>
                                   {val}
                                 </span>
-                                <span className="text-zinc-650 text-xs">/ 5</span>
-                                <span className="text-[10px] text-zinc-500 font-semibold font-mono uppercase tracking-wider ml-1">
+                                <span className="text-zinc-650 text-xs font-ios-mono">/ 5</span>
+                                <span className="text-[10px] text-zinc-500 font-bold font-ios-mono uppercase tracking-wider ml-1">
                                   ({val === 5 ? 'Excellent' : val === 4 ? 'Good' : val === 3 ? 'Neutral' : val === 2 ? 'Bad' : 'Terrible'})
                                 </span>
                               </div>
