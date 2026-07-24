@@ -6,11 +6,12 @@ import { useDeviceLayout } from '@/contexts/DeviceLayoutContext';
 import { supabase } from '@/lib/supabase';
 import { 
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, 
-  AreaChart, Area, PieChart, Pie, Cell, CartesianGrid
+  AreaChart, Area, PieChart, Pie, Cell, CartesianGrid, Line
 } from 'recharts';
 import { 
-  BarChart3, TrendingUp, Smile, Bed, Flame, Award, 
-  Loader2, Activity, PieChart as PieIcon, Sparkles
+  BarChart3, TrendingUp, Smile, Bed, Award, 
+  Loader2, Activity, PieChart as PieIcon, Sparkles, SlidersHorizontal,
+  ArrowRightLeft
 } from 'lucide-react';
 
 export default function ChartsPage() {
@@ -18,6 +19,8 @@ export default function ChartsPage() {
   const { activeDevice } = useDeviceLayout();
   const [logs, setLogs] = useState<any[]>([]);
   const [questions, setQuestions] = useState<any[]>([]);
+  const [metricAId, setMetricAId] = useState<string>('');
+  const [metricBId, setMetricBId] = useState<string>('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -31,7 +34,17 @@ export default function ChartsPage() {
           .select('*')
           .eq('user_id', user.id);
 
-        setQuestions(qData || []);
+        const loadedQuestions = qData || [];
+        setQuestions(loadedQuestions);
+
+        if (loadedQuestions.length > 0) {
+          setMetricAId(loadedQuestions[0].id);
+          if (loadedQuestions.length > 1) {
+            setMetricBId(loadedQuestions[1].id);
+          } else {
+            setMetricBId(loadedQuestions[0].id);
+          }
+        }
 
         const { data: logData } = await supabase
           .from('daily_logs')
@@ -50,7 +63,82 @@ export default function ChartsPage() {
     fetchData();
   }, [user]);
 
-  // 1. Prepare 14-Day Activity Trend Data
+  // 1. Dynamic Metric Correlation Data Extractor
+  const getCustomCorrelationData = () => {
+    if (!metricAId || !metricBId || logs.length === 0) return [];
+
+    const qA = questions.find((q) => q.id === metricAId);
+    const qB = questions.find((q) => q.id === metricBId);
+
+    const parseVal = (resp: any, type: string) => {
+      if (resp === undefined || resp === null || resp === '') return 0;
+      if (type === 'boolean') return resp === true ? 1 : 0;
+      if (type === 'number' || type === 'scale_1_to_5') return Number(resp) || 0;
+      return 1;
+    };
+
+    return logs.map((log) => {
+      const d = new Date(log.date);
+      const dateLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const rawA = log.responses?.[metricAId];
+      const rawB = log.responses?.[metricBId];
+
+      const valA = parseVal(rawA, qA?.type || 'number');
+      const valB = parseVal(rawB, qB?.type || 'number');
+
+      return {
+        date: dateLabel,
+        valA,
+        valB,
+        labelA: qA?.prompt || 'Metric A',
+        labelB: qB?.prompt || 'Metric B',
+      };
+    });
+  };
+
+  // 2. Compute Statistical Correlation Insight Text
+  const getCorrelationInsightText = () => {
+    const correlationData = getCustomCorrelationData();
+    if (correlationData.length < 2) {
+      return "Log more daily entries to unlock automated statistical correlation insights!";
+    }
+
+    const qA = questions.find((q) => q.id === metricAId);
+    const qB = questions.find((q) => q.id === metricBId);
+
+    const sumA = correlationData.reduce((acc, d) => acc + d.valA, 0);
+    const sumB = correlationData.reduce((acc, d) => acc + d.valB, 0);
+    const avgA = sumA / correlationData.length;
+    const avgB = sumB / correlationData.length;
+
+    let numerator = 0;
+    let denomA = 0;
+    let denomB = 0;
+
+    correlationData.forEach((d) => {
+      const diffA = d.valA - avgA;
+      const diffB = d.valB - avgB;
+      numerator += diffA * diffB;
+      denomA += diffA * diffA;
+      denomB += diffB * diffB;
+    });
+
+    const denominator = Math.sqrt(denomA * denomB);
+    const r = denominator !== 0 ? numerator / denominator : 0;
+
+    const labelA = qA?.prompt.length > 25 ? qA?.prompt.slice(0, 25) + '...' : qA?.prompt;
+    const labelB = qB?.prompt.length > 25 ? qB?.prompt.slice(0, 25) + '...' : qB?.prompt;
+
+    if (r > 0.4) {
+      return `📈 Strong Positive Alignment: Higher values in "${labelA}" consistently align with higher outcomes in "${labelB}" (r = ${r.toFixed(2)}).`;
+    } else if (r < -0.4) {
+      return `📉 Inverse Correlation: Higher values in "${labelA}" correspond to lower outcomes in "${labelB}" (r = ${r.toFixed(2)}).`;
+    } else {
+      return `⚖️ Balanced Patterns: "${labelA}" and "${labelB}" show steady, independent daily tracking trends.`;
+    }
+  };
+
+  // 3. Prepare 14-Day Activity Trend Data
   const get14DayTrendData = () => {
     const logMap = new Map(logs.map((l) => [l.date, l]));
     const data = [];
@@ -75,7 +163,7 @@ export default function ChartsPage() {
     return data;
   };
 
-  // 2. Prepare Habit Completion Rates
+  // 4. Prepare Habit Completion Rates
   const getHabitCompletionData = () => {
     if (!questions || questions.length === 0 || !logs || logs.length === 0) return [];
 
@@ -97,26 +185,7 @@ export default function ChartsPage() {
     });
   };
 
-  // 3. Prepare Sleep vs Mood Correlation Data
-  const getSleepMoodData = () => {
-    const sleepQ = questions.find((q) => q.type === 'number' || q.prompt.toLowerCase().includes('sleep'));
-    const moodQ = questions.find((q) => q.type === 'scale_1_to_5' || q.prompt.toLowerCase().includes('mood'));
-
-    return logs.map((log) => {
-      const d = new Date(log.date);
-      const dateLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      const sleep = sleepQ ? Number(log.responses?.[sleepQ.id]) || 0 : 7;
-      const mood = moodQ ? Number(log.responses?.[moodQ.id]) || 3 : 3;
-
-      return {
-        date: dateLabel,
-        sleepHours: sleep,
-        moodScore: mood,
-      };
-    });
-  };
-
-  // 4. Calculate Key Metrics
+  // 5. Calculate Key Metrics
   const getSummaryMetrics = () => {
     const totalLogs = logs.length;
     const daysInMonth = 30;
@@ -152,10 +221,14 @@ export default function ChartsPage() {
   }
 
   const isDesktop = activeDevice === 'desktop';
+  const correlationData = getCustomCorrelationData();
+  const correlationInsight = getCorrelationInsightText();
   const trendData = get14DayTrendData();
   const habitData = getHabitCompletionData();
-  const sleepMoodData = getSleepMoodData();
   const metrics = getSummaryMetrics();
+
+  const selectedQA = questions.find((q) => q.id === metricAId);
+  const selectedQB = questions.find((q) => q.id === metricBId);
 
   const pieData = [
     { name: 'Completed Days', value: metrics.consistencyRate },
@@ -192,8 +265,120 @@ export default function ChartsPage() {
           Performance Charts
         </h1>
         <p className="text-base text-zinc-400 font-handwritten text-xl leading-snug">
-          Visual metrics, habit completion rates, and sleep-mood correlations.
+          Visual metrics, habit completion rates, and custom metric correlation analysis.
         </p>
+      </div>
+
+      {/* TOP FEATURE: Custom 2-Metric Correlation Explorer */}
+      <div className="craft-card p-5 space-y-4 border-2" style={{ borderColor: 'var(--accent-border)' }}>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="flex items-center space-x-2.5">
+            <div 
+              className="p-2 rounded-xl border shrink-0"
+              style={{ backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-border)', color: 'var(--accent)' }}
+            >
+              <ArrowRightLeft className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-black text-zinc-100 font-ios-serif">2-Metric Correlation Explorer</h2>
+              <p className="text-xs text-zinc-400 font-ios-sans">Compare any 2 prompts to discover how habits affect your daily mindset.</p>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <SlidersHorizontal className="w-3.5 h-3.5 text-zinc-500" />
+            <span className="text-[10px] text-zinc-500 font-ios-mono uppercase font-bold">Interactive Dual-Axis</span>
+          </div>
+        </div>
+
+        {/* Dropdown Selectors Toolbar */}
+        <div className="grid gap-3 sm:grid-cols-2 bg-zinc-950/60 p-3.5 rounded-xl border border-zinc-850">
+          <div className="space-y-1">
+            <label className="block text-[11px] font-bold text-zinc-400 font-ios-mono uppercase">
+              Metric A (Primary / Area Fill):
+            </label>
+            <select
+              value={metricAId}
+              onChange={(e) => setMetricAId(e.target.value)}
+              className="w-full px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs font-ios-sans text-zinc-200 focus:outline-none cursor-pointer"
+            >
+              {questions.map((q) => (
+                <option key={q.id} value={q.id}>
+                  {q.prompt} ({q.type})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-1">
+            <label className="block text-[11px] font-bold text-zinc-400 font-ios-mono uppercase">
+              Metric B (Secondary / Line Stroke):
+            </label>
+            <select
+              value={metricBId}
+              onChange={(e) => setMetricBId(e.target.value)}
+              className="w-full px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs font-ios-sans text-zinc-200 focus:outline-none cursor-pointer"
+            >
+              {questions.map((q) => (
+                <option key={q.id} value={q.id}>
+                  {q.prompt} ({q.type})
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Insight Badge */}
+        <div 
+          className="p-3.5 rounded-xl border text-xs text-zinc-200 flex items-start space-x-2.5 font-ios-sans"
+          style={{ backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-border)' }}
+        >
+          <Sparkles className="w-4 h-4 shrink-0 mt-0.5" style={{ color: 'var(--accent)' }} />
+          <span>{correlationInsight}</span>
+        </div>
+
+        {/* Dynamic Dual-Axis Correlation Chart */}
+        <div className="h-72 w-full pt-2">
+          {correlationData.length === 0 ? (
+            <div className="h-full flex items-center justify-center text-xs text-zinc-500 font-handwritten text-lg">
+              Log daily entries to visualize your 2-metric correlation line.
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={correlationData}>
+                <defs>
+                  <linearGradient id="metricAGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.4}/>
+                    <stop offset="95%" stopColor="var(--accent)" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                <XAxis dataKey="date" stroke="#71717a" fontSize={10} />
+                <YAxis yAxisId="left" stroke="var(--accent)" fontSize={10} />
+                <YAxis yAxisId="right" orientation="right" stroke="#fbbf24" fontSize={10} />
+                <Tooltip content={<CUSTOM_TOOLTIP />} />
+                <Area 
+                  yAxisId="left" 
+                  type="monotone" 
+                  dataKey="valA" 
+                  name={selectedQA?.prompt || 'Metric A'} 
+                  stroke="var(--accent)" 
+                  fillOpacity={1} 
+                  fill="url(#metricAGrad)" 
+                />
+                <Line 
+                  yAxisId="right" 
+                  type="monotone" 
+                  dataKey="valB" 
+                  name={selectedQB?.prompt || 'Metric B'} 
+                  stroke="#fbbf24" 
+                  strokeWidth={2.5} 
+                  dot={{ r: 3, fill: '#fbbf24' }} 
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          )}
+        </div>
       </div>
 
       {/* Metric Cards Summary Grid */}
@@ -290,52 +475,12 @@ export default function ChartsPage() {
           </div>
         </div>
 
-        {/* Chart 3: Sleep vs Mood Correlation Area Chart */}
-        <div className="craft-card p-5 space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Sparkles className="w-4 h-4 text-cyan-400" />
-              <h2 className="text-sm font-bold text-zinc-200 font-ios-sans">Sleep vs Mood Correlation</h2>
-            </div>
-            <span className="text-[10px] text-zinc-500 font-ios-mono">Health Overlay</span>
-          </div>
-
-          <div className="h-60 w-full pt-2">
-            {sleepMoodData.length === 0 ? (
-              <div className="h-full flex items-center justify-center text-xs text-zinc-500 font-handwritten text-lg">
-                Log entries with sleep and mood to reveal health insights.
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={sleepMoodData}>
-                  <defs>
-                    <linearGradient id="sleepGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.4}/>
-                      <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
-                    </linearGradient>
-                    <linearGradient id="moodGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.4}/>
-                      <stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                  <XAxis dataKey="date" stroke="#71717a" fontSize={10} />
-                  <YAxis stroke="#71717a" fontSize={10} />
-                  <Tooltip content={<CUSTOM_TOOLTIP />} />
-                  <Area type="monotone" dataKey="sleepHours" name="Sleep (hrs)" stroke="#06b6d4" fillOpacity={1} fill="url(#sleepGrad)" />
-                  <Area type="monotone" dataKey="moodScore" name="Mood (1-5)" stroke="#f59e0b" fillOpacity={1} fill="url(#moodGrad)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </div>
-
-        {/* Chart 4: 30-Day Consistency Doughnut */}
-        <div className="craft-card p-5 space-y-4">
+        {/* Chart 3: 30-Day Consistency Doughnut */}
+        <div className="craft-card p-5 space-y-4 col-span-full">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <PieIcon className="w-4 h-4 text-purple-400" />
-              <h2 className="text-sm font-bold text-zinc-200 font-ios-sans">Monthly Consistency Gauge</h2>
+              <h2 className="text-sm font-bold text-zinc-200 font-ios-sans">Monthly Consistency Ratio</h2>
             </div>
             <span className="text-[10px] text-zinc-500 font-ios-mono">Overall Ratio</span>
           </div>
@@ -347,8 +492,8 @@ export default function ChartsPage() {
                   data={pieData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={60}
-                  outerRadius={85}
+                  innerRadius={65}
+                  outerRadius={90}
                   paddingAngle={5}
                   dataKey="value"
                 >
