@@ -133,8 +133,11 @@ export function calculateStreakWithFreezes(dates: string[]): StreakInfo {
     return { currentStreak: 0, bestStreak: 0, freezesUsedThisMonth: 0, freezesRemaining: 2, freezeAppliedToday: false, isMilestone: false };
   }
 
+  // Deduplicate and sort dates descending: ["2026-07-24", "2026-07-23", ...]
   const sortedDates = Array.from(new Set(dates)).sort((a, b) => b.localeCompare(a));
   const dateSet = new Set(sortedDates);
+
+  const earliestDateStr = sortedDates[sortedDates.length - 1];
 
   const todayStr = getTodayStr();
   const yesterdayStr = getYesterdayStr();
@@ -145,15 +148,17 @@ export function calculateStreakWithFreezes(dates: string[]): StreakInfo {
   let currentStreak = 0;
   let bestStreak = 0;
 
-  let checkDate = dateSet.has(todayStr) 
-    ? new Date() 
-    : dateSet.has(yesterdayStr) 
-    ? new Date(Date.now() - 86400000) 
-    : null;
+  // Determine starting point for streak evaluation
+  let checkDate: Date | null = null;
 
-  if (!checkDate && dateSet.size > 0) {
+  if (dateSet.has(todayStr)) {
+    checkDate = new Date();
+  } else if (dateSet.has(yesterdayStr)) {
+    checkDate = new Date(Date.now() - 86400000);
+  } else {
+    // If user missed yesterday, check if a freeze can bridge yesterday (provided user has past logs before yesterday)
     const twoDaysAgoStr = getNDaysAgoStr(2);
-    if (dateSet.has(twoDaysAgoStr) && freezesRemaining > 0) {
+    if (dateSet.has(twoDaysAgoStr) && yesterdayStr >= earliestDateStr && freezesRemaining > 0) {
       freezesRemaining--;
       freezesUsedThisMonth++;
       freezeAppliedToday = true;
@@ -168,38 +173,39 @@ export function calculateStreakWithFreezes(dates: string[]): StreakInfo {
       if (dateSet.has(dateStr)) {
         currentStreak++;
         checkDate.setDate(checkDate.getDate() - 1);
-      } else if (freezesRemaining > 0) {
-        freezesRemaining--;
-        freezesUsedThisMonth++;
-        currentStreak++;
-        checkDate.setDate(checkDate.getDate() - 1);
       } else {
-        break;
+        // Only use a Streak Freeze if checkDate is NOT earlier than the user's earliest logged entry ever!
+        if (dateStr >= earliestDateStr && freezesRemaining > 0) {
+          freezesRemaining--;
+          freezesUsedThisMonth++;
+          currentStreak++;
+          checkDate.setDate(checkDate.getDate() - 1);
+        } else {
+          // Beyond user's first log or no freezes remaining -> break
+          break;
+        }
       }
     }
   }
 
   // Calculate best streak
   let tempStreak = 0;
-  const allDateObjs = sortedDates.map(d => {
-    const [y, m, day] = d.split('-').map(Number);
-    return new Date(y, m - 1, day);
-  });
-
-  for (let i = 0; i < allDateObjs.length; i++) {
+  for (let i = 0; i < sortedDates.length; i++) {
     tempStreak++;
-    if (i < allDateObjs.length - 1) {
-      const diffTime = allDateObjs[i].getTime() - allDateObjs[i + 1].getTime();
-      const diffDays = Math.round(diffTime / (1000 * 3600 * 24));
-      if (diffDays > 1 && diffDays <= 2 && freezesRemaining > 0) {
+    if (i < sortedDates.length - 1) {
+      const current = new Date(sortedDates[i]);
+      const next = new Date(sortedDates[i + 1]);
+      const diffDays = Math.round((current.getTime() - next.getTime()) / (1000 * 3600 * 24));
+      if (diffDays === 2 && freezesRemaining > 0) {
         tempStreak++;
-      } else if (diffDays > 1) {
+      } else if (diffDays > 2 || (diffDays === 2 && freezesRemaining <= 0)) {
         if (tempStreak > bestStreak) bestStreak = tempStreak;
         tempStreak = 0;
       }
     }
   }
   if (tempStreak > bestStreak) bestStreak = tempStreak;
+  if (currentStreak > bestStreak) bestStreak = currentStreak;
 
   const milestoneList = [3, 5, 7, 10, 14, 21, 30, 50, 100];
   const isMilestone = milestoneList.includes(currentStreak);
