@@ -51,7 +51,7 @@ export function getRandomQuote(): string {
   return MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)];
 }
 
-// 3. Audio Chime Synthesis (Respects Sound Preference)
+// 3. Audio Chime Synthesis (iOS AudioContext Resume Fix)
 export function playCompletionChime() {
   if (typeof window === 'undefined') return;
   const soundEnabled = localStorage.getItem('reflect_sound_enabled') !== 'false';
@@ -62,6 +62,12 @@ export function playCompletionChime() {
     if (!AudioCtx) return;
     
     const ctx = new AudioCtx();
+    
+    // iOS Safari requires resuming AudioContext if suspended
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+
     const now = ctx.currentTime;
 
     const osc1 = ctx.createOscillator();
@@ -92,7 +98,7 @@ export function playCompletionChime() {
   }
 }
 
-// 4. Mobile Haptics (Respects Haptics Preference)
+// 4. Mobile Haptics
 export function triggerHaptic(ms: number = 15) {
   if (typeof window !== 'undefined' && 'vibrate' in navigator) {
     const hapticsEnabled = localStorage.getItem('reflect_haptics_enabled') !== 'false';
@@ -133,7 +139,6 @@ export function calculateStreakWithFreezes(dates: string[]): StreakInfo {
     return { currentStreak: 0, bestStreak: 0, freezesUsedThisMonth: 0, freezesRemaining: 2, freezeAppliedToday: false, isMilestone: false };
   }
 
-  // Deduplicate and sort dates descending: ["2026-07-24", "2026-07-23", ...]
   const sortedDates = Array.from(new Set(dates)).sort((a, b) => b.localeCompare(a));
   const dateSet = new Set(sortedDates);
 
@@ -148,7 +153,6 @@ export function calculateStreakWithFreezes(dates: string[]): StreakInfo {
   let currentStreak = 0;
   let bestStreak = 0;
 
-  // Determine starting point for streak evaluation
   let checkDate: Date | null = null;
 
   if (dateSet.has(todayStr)) {
@@ -156,7 +160,6 @@ export function calculateStreakWithFreezes(dates: string[]): StreakInfo {
   } else if (dateSet.has(yesterdayStr)) {
     checkDate = new Date(Date.now() - 86400000);
   } else {
-    // If user missed yesterday, check if a freeze can bridge yesterday (provided user has past logs before yesterday)
     const twoDaysAgoStr = getNDaysAgoStr(2);
     if (dateSet.has(twoDaysAgoStr) && yesterdayStr >= earliestDateStr && freezesRemaining > 0) {
       freezesRemaining--;
@@ -174,21 +177,18 @@ export function calculateStreakWithFreezes(dates: string[]): StreakInfo {
         currentStreak++;
         checkDate.setDate(checkDate.getDate() - 1);
       } else {
-        // Only use a Streak Freeze if checkDate is NOT earlier than the user's earliest logged entry ever!
         if (dateStr >= earliestDateStr && freezesRemaining > 0) {
           freezesRemaining--;
           freezesUsedThisMonth++;
           currentStreak++;
           checkDate.setDate(checkDate.getDate() - 1);
         } else {
-          // Beyond user's first log or no freezes remaining -> break
           break;
         }
       }
     }
   }
 
-  // Calculate best streak
   let tempStreak = 0;
   for (let i = 0; i < sortedDates.length; i++) {
     tempStreak++;

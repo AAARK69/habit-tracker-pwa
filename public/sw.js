@@ -12,7 +12,6 @@ self.addEventListener('push', function (event) {
         },
         tag: 'daily-reminder',
         renotify: true,
-        // Actionable notification buttons for quick lockscreen interaction
         actions: [
           { action: 'open_tracker', title: 'Open Tracker 📝' },
           { action: 'view_history', title: 'View History 📅' }
@@ -56,7 +55,10 @@ self.addEventListener('notificationclick', function (event) {
     }).then(function (windowClients) {
       for (let i = 0; i < windowClients.length; i++) {
         const client = windowClients[i];
-        if (client.url === urlToOpen && 'focus' in client) {
+        if ('focus' in client) {
+          if ('navigate' in client) {
+            client.navigate(urlToOpen);
+          }
           return client.focus();
         }
       }
