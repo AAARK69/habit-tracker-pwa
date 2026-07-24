@@ -31,6 +31,21 @@ CREATE TABLE IF NOT EXISTS public.push_subscriptions (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+-- Create Goals & Life OKRs Table
+CREATE TABLE IF NOT EXISTS public.goals (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    category TEXT NOT NULL DEFAULT 'Personal',
+    target_value NUMERIC NOT NULL DEFAULT 100,
+    current_value NUMERIC NOT NULL DEFAULT 0,
+    unit TEXT NOT NULL DEFAULT 'days',
+    target_date DATE,
+    linked_question_id UUID REFERENCES public.questions(id) ON DELETE SET NULL,
+    habit_stack TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
 -- Unique index to prevent duplicate subscription endpoints per user
 CREATE UNIQUE INDEX IF NOT EXISTS idx_user_subscription_endpoint 
 ON public.push_subscriptions (user_id, (subscription->>'endpoint'));
@@ -39,6 +54,7 @@ ON public.push_subscriptions (user_id, (subscription->>'endpoint'));
 ALTER TABLE public.questions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.daily_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.push_subscriptions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.goals ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for questions
 DROP POLICY IF EXISTS "Users can manage their own questions" ON public.questions;
@@ -62,6 +78,15 @@ CREATE POLICY "Users can manage their own daily logs"
 DROP POLICY IF EXISTS "Users can manage their own subscriptions" ON public.push_subscriptions;
 CREATE POLICY "Users can manage their own subscriptions"
     ON public.push_subscriptions
+    FOR ALL
+    TO authenticated
+    USING (auth.uid() = user_id)
+    WITH CHECK (auth.uid() = user_id);
+
+-- RLS Policies for goals
+DROP POLICY IF EXISTS "Users can manage their own goals" ON public.goals;
+CREATE POLICY "Users can manage their own goals"
+    ON public.goals
     FOR ALL
     TO authenticated
     USING (auth.uid() = user_id)
