@@ -11,7 +11,7 @@ import {
   generateMicroInsight, StreakInfo, shuffleArray
 } from '@/lib/feedback';
 import { 
-  calculateUserLevel, LevelInfo, ACCENT_THEMES
+  calculateUserLevel, calculateAchievementBadges, LevelInfo, ACCENT_THEMES, AchievementBadge
 } from '@/lib/gamification';
 import { 
   Dumbbell, Bed, Smile, Sparkles, BookOpen, GlassWater, 
@@ -49,6 +49,7 @@ export default function Dashboard() {
   const [isListening, setIsListening] = useState<Record<string, boolean>>({});
   const [allLogDates, setAllLogDates] = useState<string[]>([]);
   const [activeThemeId, setActiveThemeId] = useState('teal');
+  const [badges, setBadges] = useState<AchievementBadge[]>([]);
   const [streakInfo, setStreakInfo] = useState<StreakInfo>({
     currentStreak: 0,
     bestStreak: 0,
@@ -133,8 +134,10 @@ export default function Dashboard() {
         const logDates = logsList.map((l: any) => l.date);
         setAllLogDates(logDates);
         
-        setStreakInfo(calculateStreakWithFreezes(logDates));
+        const streak = calculateStreakWithFreezes(logDates);
+        setStreakInfo(streak);
         setLevelInfo(calculateUserLevel(logsList, activeThemeId));
+        setBadges(calculateAchievementBadges(logsList, streak.currentStreak));
         setMicroInsight(generateMicroInsight(logsList, activeQuestions || []));
 
         if (todayLog) {
@@ -294,8 +297,10 @@ export default function Dashboard() {
       const logsList = allLogs || [];
       const logDates = logsList.map((l: any) => l.date);
       setAllLogDates(logDates);
-      setStreakInfo(calculateStreakWithFreezes(logDates));
+      const streak = calculateStreakWithFreezes(logDates);
+      setStreakInfo(streak);
       setLevelInfo(calculateUserLevel(logsList, activeThemeId));
+      setBadges(calculateAchievementBadges(logsList, streak.currentStreak));
       setMicroInsight(generateMicroInsight(logsList, questions));
 
       setLog(result.data);
@@ -308,27 +313,6 @@ export default function Dashboard() {
     }
   };
 
-  const getSidebarHeatmapDays = () => {
-    const datesSet = new Set(allLogDates);
-    const days = [];
-    const now = new Date();
-
-    for (let i = 13; i >= 0; i--) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - i);
-      const yyyy = d.getFullYear();
-      const mm = String(d.getMonth() + 1).padStart(2, '0');
-      const dd = String(d.getDate()).padStart(2, '0');
-      const dateStr = `${yyyy}-${mm}-${dd}`;
-      days.push({
-        dateStr,
-        dayNum: d.getDate(),
-        isLogged: datesSet.has(dateStr),
-      });
-    }
-    return days;
-  };
-
   if (authLoading || loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
@@ -338,7 +322,6 @@ export default function Dashboard() {
     );
   }
 
-  const sidebarHeatmapDays = getSidebarHeatmapDays();
   const isDesktop = activeDevice === 'desktop';
 
   return (
@@ -388,7 +371,7 @@ export default function Dashboard() {
       {/* Main Grid */}
       <div className={`grid gap-6 ${isDesktop ? 'grid-cols-12' : 'grid-cols-1'}`}>
         
-        {/* Left Column (Desktop 16:9 Sidebar Stats) */}
+        {/* Left Column (Desktop 16:9 Sidebar Stats & Badges Vault) */}
         {isDesktop && (
           <div className="col-span-4 space-y-5">
             {/* XP & Level Progress Card */}
@@ -413,6 +396,36 @@ export default function Dashboard() {
               </div>
             </div>
 
+            {/* Achievement Badges Vault Preview (Streamlined replacement for redundant matrix) */}
+            <div className="craft-card p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-1.5 text-xs font-ios-mono font-bold text-zinc-200">
+                  <Award className="w-4 h-4 text-amber-400" />
+                  <span>Achievement Badges</span>
+                </div>
+                <span className="text-[10px] text-zinc-500 font-ios-mono">
+                  {badges.filter((b) => b.unlocked).length} / {badges.length} Unlocked
+                </span>
+              </div>
+
+              <div className="grid grid-cols-4 gap-2">
+                {badges.map((b) => (
+                  <div
+                    key={b.id}
+                    className={`p-2.5 rounded-xl border text-center transition-all ${
+                      b.unlocked
+                        ? 'bg-amber-500/10 border-amber-500/30 text-amber-300 shadow-sm'
+                        : 'bg-zinc-950/40 border-zinc-850/50 text-zinc-650 opacity-40'
+                    }`}
+                    title={`${b.name}: ${b.description}`}
+                  >
+                    <span className="text-lg block">{b.icon}</span>
+                    <span className="text-[9px] font-bold font-ios-mono truncate block mt-0.5">{b.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             {/* Streak Grace Protection Card */}
             <div className="craft-card p-4 space-y-2 border-zinc-850/80">
               <div className="flex items-center justify-between text-xs font-ios-mono">
@@ -425,30 +438,6 @@ export default function Dashboard() {
               <p className="text-[11px] text-zinc-500 font-ios-mono">
                 Automatic protection active. Missing 1 day won't break your streak chain.
               </p>
-            </div>
-
-            {/* 14-Day Consistency Matrix Sidebar Preview */}
-            <div className="craft-card p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-1.5 text-xs font-ios-mono font-bold text-zinc-200">
-                  <Activity className="w-3.5 h-3.5" style={{ color: 'var(--accent)' }} />
-                  <span>14-Day Matrix Preview</span>
-                </div>
-                <span className="text-[10px] text-zinc-500 font-ios-mono">{allLogDates.length} Check-ins</span>
-              </div>
-              <div className="grid grid-cols-7 gap-1.5">
-                {sidebarHeatmapDays.map((d) => (
-                  <div
-                    key={d.dateStr}
-                    style={d.isLogged ? { backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-border)', color: 'var(--accent)' } : {}}
-                    className={`p-1.5 rounded-lg border text-center font-ios-mono text-[10px] font-bold ${
-                      d.isLogged ? 'shadow-sm' : 'bg-zinc-950/40 border-zinc-850/50 text-zinc-650'
-                    }`}
-                  >
-                    {d.dayNum}
-                  </div>
-                ))}
-              </div>
             </div>
 
             {/* Adaptive Micro-Insight */}

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDeviceLayout, LayoutMode } from '@/contexts/DeviceLayoutContext';
-import { ClipboardList, History, Settings, LogOut, Smartphone, Monitor, Zap, BarChart3, Target, Wifi, WifiOff } from 'lucide-react';
+import { ClipboardList, History, Settings, LogOut, Smartphone, Monitor, Zap, BarChart3, Target } from 'lucide-react';
 
 export default function Navigation({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -41,6 +41,12 @@ export default function Navigation({ children }: { children: React.ReactNode }) 
     { href: '/goals', label: 'Goals', icon: Target },
     { href: '/settings/questions', label: 'Settings', icon: Settings },
   ];
+
+  const cycleLayoutMode = () => {
+    if (layoutMode === 'auto') setLayoutMode('mobile');
+    else if (layoutMode === 'mobile') setLayoutMode('desktop');
+    else setLayoutMode('auto');
+  };
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -98,43 +104,21 @@ export default function Navigation({ children }: { children: React.ReactNode }) 
           </nav>
         </div>
 
-        {/* Layout Switcher & User toolbar */}
+        {/* Streamlined Layout Switcher & User toolbar */}
         <div className="flex items-center space-x-3">
-          {/* Layout Mode Selector Toggle */}
-          <div className="flex items-center bg-zinc-950 p-1 rounded-xl border border-zinc-850">
-            <button
-              onClick={() => setLayoutMode('auto')}
-              className={`p-1.5 rounded-lg text-xs font-mono flex items-center space-x-1 transition-colors cursor-pointer ${
-                layoutMode === 'auto' ? 'bg-zinc-850 text-zinc-100 font-bold' : 'text-zinc-500 hover:text-zinc-300'
-              }`}
-              title="Auto Detect Device"
-            >
-              <Zap className="w-3.5 h-3.5 text-amber-400" />
-              <span className="hidden lg:inline text-[10px]">Auto</span>
-            </button>
-
-            <button
-              onClick={() => setLayoutMode('mobile')}
-              className={`p-1.5 rounded-lg text-xs font-mono flex items-center space-x-1 transition-colors cursor-pointer ${
-                layoutMode === 'mobile' ? 'bg-zinc-850 text-zinc-100 font-bold' : 'text-zinc-500 hover:text-zinc-300'
-              }`}
-              title="Force Mobile Vertical Layout"
-            >
-              <Smartphone className="w-3.5 h-3.5 text-teal-400" />
-              <span className="hidden lg:inline text-[10px]">Mobile</span>
-            </button>
-
-            <button
-              onClick={() => setLayoutMode('desktop')}
-              className={`p-1.5 rounded-lg text-xs font-mono flex items-center space-x-1 transition-colors cursor-pointer ${
-                layoutMode === 'desktop' ? 'bg-zinc-850 text-zinc-100 font-bold' : 'text-zinc-500 hover:text-zinc-300'
-              }`}
-              title="Force Desktop 16:9 Layout"
-            >
-              <Monitor className="w-3.5 h-3.5 text-cyan-400" />
-              <span className="hidden lg:inline text-[10px]">16:9 PC</span>
-            </button>
-          </div>
+          {/* Streamlined Single-Button Layout Mode Toggle */}
+          <button
+            onClick={cycleLayoutMode}
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-zinc-950 border border-zinc-850 hover:border-zinc-700 text-xs font-ios-mono text-zinc-300 transition-all cursor-pointer shadow-sm"
+            title="Click to cycle layout mode (Auto -> Mobile -> 16:9 PC)"
+          >
+            {layoutMode === 'auto' && <Zap className="w-3.5 h-3.5 text-amber-400" />}
+            {layoutMode === 'mobile' && <Smartphone className="w-3.5 h-3.5 text-teal-400" />}
+            {layoutMode === 'desktop' && <Monitor className="w-3.5 h-3.5 text-cyan-400" />}
+            <span className="font-bold">
+              {layoutMode === 'auto' ? 'Auto ⚡' : layoutMode === 'mobile' ? 'Mobile 📱' : '16:9 PC 💻'}
+            </span>
+          </button>
 
           {user && (
             <span className="hidden lg:inline text-xs text-zinc-500 font-mono border-l border-zinc-800 pl-3">

@@ -269,6 +269,45 @@ export default function ChartsPage() {
         </p>
       </div>
 
+      {/* Metric Cards Summary Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="craft-card p-4 space-y-1">
+          <div className="flex items-center space-x-2 text-zinc-400 text-xs font-ios-mono">
+            <Activity className="w-4 h-4" style={{ color: 'var(--accent)' }} />
+            <span>Check-ins</span>
+          </div>
+          <span className="text-2xl font-black font-ios-rounded text-zinc-100">{metrics.totalLogs}</span>
+          <span className="block text-[10px] text-zinc-500 font-ios-mono">Total reflections</span>
+        </div>
+
+        <div className="craft-card p-4 space-y-1">
+          <div className="flex items-center space-x-2 text-zinc-400 text-xs font-ios-mono">
+            <PieIcon className="w-4 h-4 text-emerald-400" />
+            <span>Consistency</span>
+          </div>
+          <span className="text-2xl font-black font-ios-rounded text-emerald-400">{metrics.consistencyRate}%</span>
+          <span className="block text-[10px] text-zinc-500 font-ios-mono">30-Day Rate</span>
+        </div>
+
+        <div className="craft-card p-4 space-y-1">
+          <div className="flex items-center space-x-2 text-zinc-400 text-xs font-ios-mono">
+            <Bed className="w-4 h-4 text-cyan-400" />
+            <span>Avg Sleep</span>
+          </div>
+          <span className="text-2xl font-black font-ios-rounded text-cyan-300">{metrics.avgSleep || '-'} hrs</span>
+          <span className="block text-[10px] text-zinc-500 font-ios-mono">Nightly average</span>
+        </div>
+
+        <div className="craft-card p-4 space-y-1">
+          <div className="flex items-center space-x-2 text-zinc-400 text-xs font-ios-mono">
+            <Smile className="w-4 h-4 text-amber-400" />
+            <span>Avg Mood</span>
+          </div>
+          <span className="text-2xl font-black font-ios-rounded text-amber-300">{metrics.avgMood || '-'}/5</span>
+          <span className="block text-[10px] text-zinc-500 font-ios-mono">Overall score</span>
+        </div>
+      </div>
+
       {/* TOP FEATURE: Custom 2-Metric Correlation Explorer */}
       <div className="craft-card p-5 space-y-4 border-2" style={{ borderColor: 'var(--accent-border)' }}>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
@@ -378,45 +417,6 @@ export default function ChartsPage() {
               </AreaChart>
             </ResponsiveContainer>
           )}
-        </div>
-      </div>
-
-      {/* Metric Cards Summary Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="craft-card p-4 space-y-1">
-          <div className="flex items-center space-x-2 text-zinc-400 text-xs font-ios-mono">
-            <Activity className="w-4 h-4" style={{ color: 'var(--accent)' }} />
-            <span>Check-ins</span>
-          </div>
-          <span className="text-2xl font-black font-ios-rounded text-zinc-100">{metrics.totalLogs}</span>
-          <span className="block text-[10px] text-zinc-500 font-ios-mono">Total reflections</span>
-        </div>
-
-        <div className="craft-card p-4 space-y-1">
-          <div className="flex items-center space-x-2 text-zinc-400 text-xs font-ios-mono">
-            <PieIcon className="w-4 h-4 text-emerald-400" />
-            <span>Consistency</span>
-          </div>
-          <span className="text-2xl font-black font-ios-rounded text-emerald-400">{metrics.consistencyRate}%</span>
-          <span className="block text-[10px] text-zinc-500 font-ios-mono">30-Day Rate</span>
-        </div>
-
-        <div className="craft-card p-4 space-y-1">
-          <div className="flex items-center space-x-2 text-zinc-400 text-xs font-ios-mono">
-            <Bed className="w-4 h-4 text-cyan-400" />
-            <span>Avg Sleep</span>
-          </div>
-          <span className="text-2xl font-black font-ios-rounded text-cyan-300">{metrics.avgSleep || '-'} hrs</span>
-          <span className="block text-[10px] text-zinc-500 font-ios-mono">Nightly average</span>
-        </div>
-
-        <div className="craft-card p-4 space-y-1">
-          <div className="flex items-center space-x-2 text-zinc-400 text-xs font-ios-mono">
-            <Smile className="w-4 h-4 text-amber-400" />
-            <span>Avg Mood</span>
-          </div>
-          <span className="text-2xl font-black font-ios-rounded text-amber-300">{metrics.avgMood || '-'}/5</span>
-          <span className="block text-[10px] text-zinc-500 font-ios-mono">Overall score</span>
         </div>
       </div>
 
