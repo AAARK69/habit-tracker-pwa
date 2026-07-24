@@ -11,7 +11,7 @@ import {
   generateMicroInsight, StreakInfo, shuffleArray
 } from '@/lib/feedback';
 import { 
-  calculateUserLevel, LevelInfo 
+  calculateUserLevel, LevelInfo, ACCENT_THEMES
 } from '@/lib/gamification';
 import { 
   Dumbbell, Bed, Smile, Sparkles, BookOpen, GlassWater, 
@@ -48,6 +48,7 @@ export default function Dashboard() {
   const [submitting, setSubmitting] = useState(false);
   const [isListening, setIsListening] = useState<Record<string, boolean>>({});
   const [allLogDates, setAllLogDates] = useState<string[]>([]);
+  const [activeThemeId, setActiveThemeId] = useState('teal');
   const [streakInfo, setStreakInfo] = useState<StreakInfo>({
     currentStreak: 0,
     bestStreak: 0,
@@ -75,6 +76,19 @@ export default function Dashboard() {
     const dd = String(dateObj.getDate()).padStart(2, '0');
     return `${yyyy}-${mm}-${dd}`;
   };
+
+  useEffect(() => {
+    const theme = localStorage.getItem('reflect_accent_theme') || 'teal';
+    setActiveThemeId(theme);
+
+    const handleThemeChange = () => {
+      const updatedTheme = localStorage.getItem('reflect_accent_theme') || 'teal';
+      setActiveThemeId(updatedTheme);
+    };
+
+    window.addEventListener('reflect_theme_change', handleThemeChange);
+    return () => window.removeEventListener('reflect_theme_change', handleThemeChange);
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -120,7 +134,7 @@ export default function Dashboard() {
         setAllLogDates(logDates);
         
         setStreakInfo(calculateStreakWithFreezes(logDates));
-        setLevelInfo(calculateUserLevel(logsList));
+        setLevelInfo(calculateUserLevel(logsList, activeThemeId));
         setMicroInsight(generateMicroInsight(logsList, activeQuestions || []));
 
         if (todayLog) {
@@ -150,7 +164,9 @@ export default function Dashboard() {
     };
 
     fetchData();
-  }, [user]);
+  }, [user, activeThemeId]);
+
+  const activeThemeObj = ACCENT_THEMES.find((t) => t.id === activeThemeId) || ACCENT_THEMES[0];
 
   const handleShuffleQuestions = () => {
     triggerHaptic(20);
@@ -279,7 +295,7 @@ export default function Dashboard() {
       const logDates = logsList.map((l: any) => l.date);
       setAllLogDates(logDates);
       setStreakInfo(calculateStreakWithFreezes(logDates));
-      setLevelInfo(calculateUserLevel(logsList));
+      setLevelInfo(calculateUserLevel(logsList, activeThemeId));
       setMicroInsight(generateMicroInsight(logsList, questions));
 
       setLog(result.data);
@@ -333,7 +349,7 @@ export default function Dashboard() {
           <div className="flex items-center space-x-2">
             <PenTool className="w-4 h-4" style={{ color: 'var(--accent)' }} />
             <span className="text-xs uppercase tracking-widest font-extrabold font-ios-mono" style={{ color: 'var(--accent)' }}>
-              {isDesktop ? '💻 16:9 Desktop Studio Mode' : '📱 Mobile PWA Mode'}
+              {activeThemeObj.nicheTag} • {isDesktop ? '💻 16:9 PC Studio' : '📱 Mobile PWA'}
             </span>
           </div>
           <h1 className="text-3xl font-extrabold text-zinc-50 tracking-tight font-ios-serif">
@@ -341,7 +357,7 @@ export default function Dashboard() {
           </h1>
           <p className="text-base text-zinc-400 font-handwritten text-xl leading-snug">
             {isEditing 
-              ? "Take a breath, put pen to paper, and log your daily habits."
+              ? activeThemeObj.nicheQuote
               : "All habits logged & stamped. Take a rest and enjoy real life!"}
           </p>
         </div>
@@ -671,7 +687,9 @@ export default function Dashboard() {
                     {submitting ? (
                       <Loader2 className="w-5 h-5 animate-spin text-zinc-950" />
                     ) : (
-                      <span className="font-handwritten text-xl font-bold tracking-wide">Stamp & Save Daily Journal (+70 XP) ✒️</span>
+                      <span className="font-handwritten text-xl font-bold tracking-wide">
+                        {activeThemeObj.nicheStamp} (+70 XP)
+                      </span>
                     )}
                   </button>
                 </div>
@@ -695,11 +713,11 @@ export default function Dashboard() {
                     className="text-[10px] font-ios-mono font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full border"
                     style={{ backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-border)', color: 'var(--accent)' }}
                   >
-                    Entry Stamped & Verified ✒️
+                    {activeThemeObj.nicheStamp}
                   </span>
                   <h3 className="text-2xl font-black text-zinc-100 font-ios-serif">Day Complete 🎯</h3>
                   <p className="text-zinc-300 text-xl leading-relaxed font-handwritten">
-                    "{motivationalQuote || "You've successfully completed today's reflection. Get back to real life!"}"
+                    "{motivationalQuote || activeThemeObj.nicheQuote}"
                   </p>
                 </div>
 
