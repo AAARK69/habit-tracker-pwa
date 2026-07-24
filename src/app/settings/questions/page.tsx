@@ -9,7 +9,7 @@ import {
   Brain, Flame, Heart, Coffee, ClipboardList, CheckSquare, 
   HelpCircle, Plus, Trash2, Edit2, Check, X, ArrowUp, 
   ArrowDown, Eye, EyeOff, Loader2, Download, Palette, FileSpreadsheet, FileCode,
-  Volume2, VolumeX, Smartphone, Clock, ShieldAlert, RotateCcw
+  Volume2, VolumeX, Smartphone, Clock, RotateCcw
 } from 'lucide-react';
 
 const AVAILABLE_ICONS = [
@@ -81,7 +81,6 @@ export default function QuestionsSettings() {
   useEffect(() => {
     fetchQuestions();
     
-    // Load client preferences from localStorage
     const savedTheme = localStorage.getItem('reflect_accent_theme') || 'teal';
     const savedSound = localStorage.getItem('reflect_sound_enabled') !== 'false';
     const savedHaptics = localStorage.getItem('reflect_haptics_enabled') !== 'false';
@@ -115,7 +114,7 @@ export default function QuestionsSettings() {
     localStorage.setItem('reflect_reminder_time', time);
   };
 
-  // Reset Default Questions Handler
+  // Reset Default Questions Handler with column fallback
   const handleResetDefaults = async () => {
     if (!user) return;
     if (!confirm('Restore default habit prompts? Existing custom prompts will remain untouched.')) return;
@@ -129,7 +128,15 @@ export default function QuestionsSettings() {
         { user_id: user.id, prompt: 'What was the highlight of your day?', type: 'text', order_index: 3, icon: 'sparkles' },
       ];
 
-      const { error } = await supabase.from('questions').insert(defaultPrompts);
+      let { error } = await supabase.from('questions').insert(defaultPrompts);
+      
+      // Fallback if 'icon' column does not exist in schema cache
+      if (error && (error.message.includes("icon") || error.message.includes("schema cache") || error.message.includes("column"))) {
+        const fallbackPrompts = defaultPrompts.map(({ icon, ...rest }) => rest);
+        const retry = await supabase.from('questions').insert(fallbackPrompts);
+        error = retry.error;
+      }
+
       if (error) throw error;
       await fetchQuestions();
     } catch (err: any) {
@@ -183,6 +190,7 @@ export default function QuestionsSettings() {
     }
   };
 
+  // Add question handler with missing 'icon' column fallback
   const handleAddQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !newPrompt.trim()) return;
@@ -191,16 +199,25 @@ export default function QuestionsSettings() {
     try {
       const maxIndex = questions.reduce((max, q) => Math.max(max, q.order_index), -1);
       
-      const { error } = await supabase
+      const insertPayload: any = {
+        user_id: user.id,
+        prompt: newPrompt.trim(),
+        type: newType,
+        order_index: maxIndex + 1,
+        is_active: true,
+        icon: newIcon,
+      };
+
+      let { error } = await supabase
         .from('questions')
-        .insert({
-          user_id: user.id,
-          prompt: newPrompt.trim(),
-          type: newType,
-          order_index: maxIndex + 1,
-          is_active: true,
-          icon: newIcon,
-        });
+        .insert(insertPayload);
+
+      // Fallback if 'icon' column is missing from the database schema cache
+      if (error && (error.message.includes("icon") || error.message.includes("schema cache") || error.message.includes("column"))) {
+        delete insertPayload.icon;
+        const retry = await supabase.from('questions').insert(insertPayload);
+        error = retry.error;
+      }
 
       if (error) throw error;
 
@@ -545,7 +562,8 @@ export default function QuestionsSettings() {
           <div className="space-y-3">
             {questions.map((q, idx) => {
               const isEditingThis = editingId === q.id;
-              const IconComponent = IconMap[q.icon] || HelpCircle;
+              const iconKey = q.icon || 'help-circle';
+              const IconComponent = IconMap[iconKey] || HelpCircle;
               
               const typeLabels: Record<string, string> = {
                 boolean: 'Yes/No',
