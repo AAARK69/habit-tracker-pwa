@@ -6,7 +6,8 @@ import { supabase } from '@/lib/supabase';
 import { 
   Dumbbell, Bed, Smile, Sparkles, BookOpen, GlassWater, 
   Brain, Flame, Heart, Coffee, ClipboardList, CheckSquare, 
-  HelpCircle, Calendar, MessageSquare, Check, X, Loader2
+  HelpCircle, Calendar, MessageSquare, Check, X, Loader2,
+  Activity
 } from 'lucide-react';
 
 const IconMap: Record<string, any> = {
@@ -81,6 +82,30 @@ export default function HistoryPage() {
     });
   };
 
+  // Generate 28-day Activity Heatmap matrix
+  const generateHeatmapDays = () => {
+    const loggedDatesSet = new Set(logs.map((l) => l.date));
+    const days = [];
+    const now = new Date();
+
+    for (let i = 27; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      const dateStr = `${yyyy}-${mm}-${dd}`;
+      
+      days.push({
+        dateStr,
+        dayName: d.toLocaleDateString('en-US', { weekday: 'narrow' }),
+        dayNum: d.getDate(),
+        isLogged: loggedDatesSet.has(dateStr),
+      });
+    }
+    return days;
+  };
+
   if (authLoading || loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
@@ -89,6 +114,8 @@ export default function HistoryPage() {
       </div>
     );
   }
+
+  const heatmapDays = generateHeatmapDays();
 
   return (
     <div className="space-y-6">
@@ -104,6 +131,36 @@ export default function HistoryPage() {
         <p className="text-sm text-zinc-400">
           Scroll through your past entries and reflect on your growth over time.
         </p>
+      </div>
+
+      {/* 28-Day Mini Heatmap Grid */}
+      <div className="glass-panel p-5 rounded-2xl border border-zinc-850 bg-zinc-900/10 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Activity className="w-4 h-4 text-teal-400" />
+            <span className="text-xs font-extrabold text-zinc-200 uppercase tracking-widest font-mono">28-Day Consistency Matrix</span>
+          </div>
+          <span className="text-[10px] text-zinc-500 font-mono">
+            {logs.length} Total Check-ins
+          </span>
+        </div>
+
+        <div className="grid grid-cols-7 gap-2 pt-1">
+          {heatmapDays.map((day) => (
+            <div
+              key={day.dateStr}
+              className={`p-2 rounded-xl border flex flex-col items-center justify-center transition-all ${
+                day.isLogged
+                  ? 'bg-teal-500/15 border-teal-500/35 text-teal-400 shadow-sm shadow-teal-500/10 scale-105'
+                  : 'bg-zinc-950/40 border-zinc-850/60 text-zinc-650'
+              }`}
+              title={`${day.dateStr}: ${day.isLogged ? 'Completed' : 'Missed'}`}
+            >
+              <span className="text-[9px] font-bold font-mono opacity-80 uppercase">{day.dayName}</span>
+              <span className="text-xs font-black font-mono mt-0.5">{day.dayNum}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       {logs.length === 0 ? (

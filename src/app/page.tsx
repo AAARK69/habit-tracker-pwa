@@ -5,13 +5,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import NotificationToggle from '@/components/NotificationToggle';
 import { 
+  playCompletionChime, triggerHaptic, updateAppBadge, calculateStreak 
+} from '@/lib/feedback';
+import { 
   Dumbbell, Bed, Smile, Sparkles, BookOpen, GlassWater, 
   Brain, Flame, Heart, Coffee, ClipboardList, CheckSquare, 
   HelpCircle, CheckCircle, Edit3, Loader2, Check, X, 
-  MessageSquare
+  MessageSquare, Zap
 } from 'lucide-react';
 
-// Client-side Icon Mapper
 const IconMap: Record<string, any> = {
   'dumbbell': Dumbbell,
   'bed': Bed,
@@ -36,6 +38,7 @@ export default function Dashboard() {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [streak, setStreak] = useState({ currentStreak: 0, bestStreak: 0 });
 
   const getLocalTodayDateStr = () => {
     const dateObj = new Date();
@@ -74,13 +77,25 @@ export default function Dashboard() {
 
         if (logError) throw logError;
 
+        // 3. Fetch all log dates for streak calculation
+        const { data: allLogs } = await supabase
+          .from('daily_logs')
+          .select('date')
+          .eq('user_id', user.id);
+
+        const logDates = allLogs?.map((l: any) => l.date) || [];
+        const streakData = calculateStreak(logDates);
+        setStreak(streakData);
+
         if (todayLog) {
           setLog(todayLog);
           setAnswers(todayLog.responses || {});
           setIsEditing(false);
+          updateAppBadge(0);
         } else {
           setLog(null);
           setIsEditing(true);
+          updateAppBadge(1);
           
           const initialAnswers: Record<string, any> = {};
           activeQuestions?.forEach((q) => {
@@ -102,6 +117,7 @@ export default function Dashboard() {
   }, [user]);
 
   const handleAnswerChange = (questionId: string, value: any) => {
+    triggerHaptic(10);
     setAnswers((prev) => ({
       ...prev,
       [questionId]: value,
@@ -138,6 +154,19 @@ export default function Dashboard() {
 
       if (result.error) throw result.error;
 
+      // Play chime & haptic feedback on successful check-in
+      playCompletionChime();
+      triggerHaptic(35);
+      updateAppBadge(0);
+
+      // Refresh streaks
+      const { data: allLogs } = await supabase
+        .from('daily_logs')
+        .select('date')
+        .eq('user_id', user.id);
+      const logDates = allLogs?.map((l: any) => l.date) || [];
+      setStreak(calculateStreak(logDates));
+
       setLog(result.data);
       setIsEditing(false);
     } catch (err: any) {
@@ -159,20 +188,33 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Header reflection */}
-      <div className="space-y-1">
-        <div className="flex items-center space-x-2 text-teal-405">
-          <Sparkles className="w-4 h-4" />
-          <span className="text-xs uppercase tracking-widest font-extrabold font-mono">Daily Check-in</span>
+      {/* Header reflection + Live Streak Badge */}
+      <div className="flex items-start justify-between">
+        <div className="space-y-1">
+          <div className="flex items-center space-x-2 text-teal-405">
+            <Sparkles className="w-4 h-4" />
+            <span className="text-xs uppercase tracking-widest font-extrabold font-mono">Daily Check-in</span>
+          </div>
+          <h1 className="text-3xl font-extrabold text-zinc-50 tracking-tight">
+            {isEditing ? "Log Your Day" : "Daily Completed"}
+          </h1>
+          <p className="text-sm text-zinc-400 leading-relaxed">
+            {isEditing 
+              ? "Take a moment to reflect on your habits, actions, and mindset."
+              : "Your entry is saved. Rest well and check in again tomorrow!"}
+          </p>
         </div>
-        <h1 className="text-3xl font-extrabold text-zinc-50 tracking-tight">
-          {isEditing ? "Log Your Day" : "Daily Completed"}
-        </h1>
-        <p className="text-sm text-zinc-400 leading-relaxed">
-          {isEditing 
-            ? "Take a moment to reflect on your habits, actions, and mindset."
-            : "Your entry is saved. Rest well and check in again tomorrow!"}
-        </p>
+
+        {/* Dynamic Streak Badge */}
+        <div className="glass-panel px-3.5 py-2 rounded-2xl border border-amber-500/20 bg-amber-500/5 flex items-center space-x-2 shrink-0 shadow-md shadow-amber-950/10">
+          <Flame className="w-5 h-5 text-amber-400 animate-pulse" />
+          <div className="text-right">
+            <span className="block text-xs font-black text-amber-300 font-mono leading-none">
+              {streak.currentStreak} {streak.currentStreak === 1 ? 'DAY' : 'DAYS'}
+            </span>
+            <span className="text-[9px] text-amber-500/80 font-mono font-bold">STREAK</span>
+          </div>
+        </div>
       </div>
 
       {/* Subscription Settings Banner */}
@@ -324,7 +366,10 @@ export default function Dashboard() {
               </p>
             </div>
             <button
-              onClick={() => setIsEditing(true)}
+              onClick={() => {
+                triggerHaptic(10);
+                setIsEditing(true);
+              }}
               className="flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold bg-zinc-950 hover:bg-zinc-900 border border-zinc-850 hover:border-zinc-800 transition-all text-zinc-300 cursor-pointer shadow shadow-black/60"
             >
               <Edit3 className="w-3.5 h-3.5 text-zinc-450" />
