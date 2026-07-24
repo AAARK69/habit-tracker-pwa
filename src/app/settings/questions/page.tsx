@@ -3,14 +3,14 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { ACCENT_THEMES } from '@/lib/gamification';
 import { 
   Dumbbell, Bed, Smile, Sparkles, BookOpen, GlassWater, 
   Brain, Flame, Heart, Coffee, ClipboardList, CheckSquare, 
   HelpCircle, Plus, Trash2, Edit2, Check, X, ArrowUp, 
-  ArrowDown, Eye, EyeOff, Loader2
+  ArrowDown, Eye, EyeOff, Loader2, Download, Palette, FileSpreadsheet, FileCode
 } from 'lucide-react';
 
-// Available icons to choose from
 const AVAILABLE_ICONS = [
   { name: 'dumbbell', label: 'Exercise', icon: Dumbbell },
   { name: 'bed', label: 'Sleep', icon: Bed },
@@ -50,8 +50,10 @@ export default function QuestionsSettings() {
   const [newIcon, setNewIcon] = useState('check-square');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingPrompt, setEditingPrompt] = useState('');
+  const [selectedTheme, setSelectedTheme] = useState('teal');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const fetchQuestions = async () => {
     if (!user) return;
@@ -74,7 +76,59 @@ export default function QuestionsSettings() {
 
   useEffect(() => {
     fetchQuestions();
+    const savedTheme = localStorage.getItem('reflect_accent_theme') || 'teal';
+    setSelectedTheme(savedTheme);
   }, [user]);
+
+  const handleSelectTheme = (themeId: string) => {
+    setSelectedTheme(themeId);
+    localStorage.setItem('reflect_accent_theme', themeId);
+  };
+
+  // CSV & JSON Data Export Handler
+  const handleExportData = async (format: 'csv' | 'json') => {
+    if (!user) return;
+    setExporting(true);
+
+    try {
+      const { data: logs, error } = await supabase
+        .from('daily_logs')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('date', { ascending: false });
+
+      if (error) throw error;
+
+      if (format === 'json') {
+        const jsonStr = JSON.stringify(logs, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `reflect-journal-export-${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      } else {
+        // CSV Format
+        let csv = 'ID,Date,Responses,CreatedAt\n';
+        logs?.forEach((l) => {
+          const respStr = JSON.stringify(l.responses).replace(/"/g, '""');
+          csv += `"${l.id}","${l.date}","${respStr}","${l.created_at}"\n`;
+        });
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `reflect-journal-export-${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    } catch (err: any) {
+      alert('Export failed: ' + err.message);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const handleAddQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -202,14 +256,74 @@ export default function QuestionsSettings() {
       <div className="space-y-1">
         <div className="flex items-center space-x-2 text-teal-400">
           <CheckSquare className="w-4 h-4" />
-          <span className="text-xs uppercase tracking-widest font-extrabold font-mono">Customization</span>
+          <span className="text-xs uppercase tracking-widest font-extrabold font-mono">Customization & Privacy</span>
         </div>
         <h1 className="text-3xl font-extrabold text-zinc-50 tracking-tight">
-          Question Settings
+          Settings & Customization
         </h1>
         <p className="text-sm text-zinc-400">
-          Add, reorder, edit, or disable questions to design your perfect daily reflection.
+          Manage habits, customize UI accent themes, and export your private reflection journal.
         </p>
+      </div>
+
+      {/* Theme Accent Switcher */}
+      <div className="glass-panel p-5 rounded-2xl border border-zinc-850 bg-zinc-900/10 space-y-3">
+        <div className="flex items-center space-x-2">
+          <Palette className="w-4 h-4 text-teal-400" />
+          <h2 className="text-sm font-bold text-zinc-300">UI Accent Color Themes</h2>
+        </div>
+        <div className="flex flex-wrap gap-2.5 pt-1">
+          {ACCENT_THEMES.map((t) => {
+            const isSelected = selectedTheme === t.id;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => handleSelectTheme(t.id)}
+                className={`flex items-center space-x-2 px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                  isSelected
+                    ? 'bg-zinc-900 border-teal-500/40 text-teal-400 shadow-md'
+                    : 'bg-zinc-950/40 border-zinc-850 text-zinc-450 hover:text-zinc-200'
+                }`}
+              >
+                <div 
+                  className="w-3 h-3 rounded-full shadow-sm"
+                  style={{ backgroundColor: t.colorHex }}
+                ></div>
+                <span>{t.name}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Data Export & Backup Section */}
+      <div className="glass-panel p-5 rounded-2xl border border-zinc-850 bg-zinc-900/10 space-y-3">
+        <div className="flex items-center space-x-2">
+          <Download className="w-4 h-4 text-teal-400" />
+          <h2 className="text-sm font-bold text-zinc-300">Export Journal Data</h2>
+        </div>
+        <p className="text-xs text-zinc-400 leading-relaxed">
+          Download your complete daily reflections history for offline backup or analytical review.
+        </p>
+        <div className="flex space-x-3 pt-1">
+          <button
+            onClick={() => handleExportData('csv')}
+            disabled={exporting}
+            className="flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-zinc-950 border border-zinc-850 hover:border-zinc-700 text-zinc-200 transition-colors cursor-pointer disabled:opacity-50"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-teal-400" />
+            <span>Export CSV</span>
+          </button>
+          <button
+            onClick={() => handleExportData('json')}
+            disabled={exporting}
+            className="flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-zinc-950 border border-zinc-850 hover:border-zinc-700 text-zinc-200 transition-colors cursor-pointer disabled:opacity-50"
+          >
+            <FileCode className="w-4 h-4 text-teal-400" />
+            <span>Export JSON</span>
+          </button>
+        </div>
       </div>
 
       {/* Add new question form */}

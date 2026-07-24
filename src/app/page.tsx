@@ -10,10 +10,14 @@ import {
   generateMicroInsight, StreakInfo
 } from '@/lib/feedback';
 import { 
+  calculateUserLevel, LevelInfo 
+} from '@/lib/gamification';
+import { 
   Dumbbell, Bed, Smile, Sparkles, BookOpen, GlassWater, 
   Brain, Flame, Heart, Coffee, ClipboardList, CheckSquare, 
   HelpCircle, CheckCircle, Edit3, Loader2, Check, X, 
-  MessageSquare, ShieldCheck, Award, Lightbulb, Lock, ArrowRight
+  MessageSquare, ShieldCheck, Award, Lightbulb, Share2, 
+  Mic, MicOff, Trophy
 } from 'lucide-react';
 
 const IconMap: Record<string, any> = {
@@ -40,6 +44,7 @@ export default function Dashboard() {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [isListening, setIsListening] = useState<Record<string, boolean>>({});
   const [streakInfo, setStreakInfo] = useState<StreakInfo>({
     currentStreak: 0,
     bestStreak: 0,
@@ -48,8 +53,17 @@ export default function Dashboard() {
     freezeAppliedToday: false,
     isMilestone: false
   });
+  const [levelInfo, setLevelInfo] = useState<LevelInfo>({
+    totalXP: 0,
+    level: 1,
+    title: 'Novice Reflector',
+    currentLevelXP: 0,
+    nextLevelXP: 100,
+    progressPercent: 0,
+  });
   const [motivationalQuote, setMotivationalQuote] = useState('');
   const [microInsight, setMicroInsight] = useState('');
+  const [copiedShare, setCopiedShare] = useState(false);
 
   const getLocalTodayDateStr = () => {
     const dateObj = new Date();
@@ -88,7 +102,7 @@ export default function Dashboard() {
 
         if (logError) throw logError;
 
-        // 3. Fetch all log dates for streaks & adaptive insights
+        // 3. Fetch all log dates for streaks, level XP & insights
         const { data: allLogs } = await supabase
           .from('daily_logs')
           .select('*')
@@ -97,8 +111,8 @@ export default function Dashboard() {
         const logsList = allLogs || [];
         const logDates = logsList.map((l: any) => l.date);
         
-        const streakData = calculateStreakWithFreezes(logDates);
-        setStreakInfo(streakData);
+        setStreakInfo(calculateStreakWithFreezes(logDates));
+        setLevelInfo(calculateUserLevel(logsList));
         setMicroInsight(generateMicroInsight(logsList, activeQuestions || []));
 
         if (todayLog) {
@@ -138,6 +152,77 @@ export default function Dashboard() {
     }));
   };
 
+  // Voice-to-Text Journaling Handler (Web Speech API)
+  const toggleVoiceJournaling = (questionId: string) => {
+    triggerHaptic(20);
+    if (typeof window === 'undefined') return;
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert('Speech recognition is not supported in this browser. Try Safari on iOS or Chrome.');
+      return;
+    }
+
+    if (isListening[questionId]) {
+      setIsListening((prev) => ({ ...prev, [questionId]: false }));
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US';
+
+      recognition.onstart = () => {
+        setIsListening((prev) => ({ ...prev, [questionId]: true }));
+      };
+
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setAnswers((prev) => ({
+          ...prev,
+          [questionId]: prev[questionId] ? `${prev[questionId]} ${transcript}` : transcript,
+        }));
+        setIsListening((prev) => ({ ...prev, [questionId]: false }));
+        triggerHaptic(15);
+      };
+
+      recognition.onerror = () => {
+        setIsListening((prev) => ({ ...prev, [questionId]: false }));
+      };
+
+      recognition.onend = () => {
+        setIsListening((prev) => ({ ...prev, [questionId]: false }));
+      };
+
+      recognition.start();
+    } catch (err) {
+      console.error('Error starting speech recognition:', err);
+      setIsListening((prev) => ({ ...prev, [questionId]: false }));
+    }
+  };
+
+  const handleShareStreak = async () => {
+    triggerHaptic(15);
+    const text = `🔥 ${streakInfo.currentStreak}-Day Streak on Reflect! Level ${levelInfo.level} (${levelInfo.title}) • ${levelInfo.totalXP} XP.`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Reflect Journey Progress',
+          text,
+          url: window.location.origin,
+        });
+      } catch {}
+    } else {
+      await navigator.clipboard.writeText(text);
+      setCopiedShare(true);
+      setTimeout(() => setCopiedShare(false), 2500);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -175,7 +260,7 @@ export default function Dashboard() {
       updateAppBadge(0);
       setMotivationalQuote(getRandomQuote());
 
-      // Refresh streaks and micro-insights
+      // Refresh streaks, levels, and micro-insights
       const { data: allLogs } = await supabase
         .from('daily_logs')
         .select('*')
@@ -183,6 +268,7 @@ export default function Dashboard() {
       const logsList = allLogs || [];
       const logDates = logsList.map((l: any) => l.date);
       setStreakInfo(calculateStreakWithFreezes(logDates));
+      setLevelInfo(calculateUserLevel(logsList));
       setMicroInsight(generateMicroInsight(logsList, questions));
 
       setLog(result.data);
@@ -223,7 +309,7 @@ export default function Dashboard() {
           </p>
         </div>
 
-        {/* Dynamic Streak Badge & Grace Protection Indicator */}
+        {/* Dynamic Streak Badge & Share Button */}
         <div className="flex flex-col items-end space-y-1.5 shrink-0">
           <div className="glass-panel px-3.5 py-2 rounded-2xl border border-amber-500/20 bg-amber-500/5 flex items-center space-x-2 shadow-md shadow-amber-950/10">
             <Flame className="w-5 h-5 text-amber-400 animate-pulse" />
@@ -235,11 +321,36 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Streak Freeze Grace Indicator */}
-          <div className="flex items-center space-x-1 text-[10px] font-mono text-zinc-500 bg-zinc-950 px-2 py-0.5 rounded-full border border-zinc-850">
-            <ShieldCheck className="w-3 h-3 text-teal-400" />
-            <span>{streakInfo.freezesRemaining} Freezes Left</span>
+          <button
+            onClick={handleShareStreak}
+            className="flex items-center space-x-1 text-[10px] font-mono text-teal-400 bg-teal-500/10 px-2 py-0.5 rounded-full border border-teal-500/20 hover:bg-teal-500/20 transition-colors cursor-pointer"
+          >
+            <Share2 className="w-3 h-3" />
+            <span>{copiedShare ? 'Copied!' : 'Share'}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Gamification Level & XP Progress Card */}
+      <div className="glass-panel p-4 rounded-2xl border border-zinc-850 bg-zinc-900/20 space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Trophy className="w-4 h-4 text-amber-400" />
+            <span className="text-xs font-black text-zinc-150 font-mono">
+              Level {levelInfo.level}: <span className="text-teal-400">{levelInfo.title}</span>
+            </span>
           </div>
+          <span className="text-xs font-bold text-zinc-450 font-mono">
+            {levelInfo.totalXP} XP
+          </span>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="w-full h-2 bg-zinc-950 rounded-full overflow-hidden border border-zinc-850">
+          <div 
+            className="h-full bg-gradient-to-r from-teal-400 to-emerald-400 transition-all duration-500 rounded-full"
+            style={{ width: `${levelInfo.progressPercent}%` }}
+          ></div>
         </div>
       </div>
 
@@ -287,13 +398,31 @@ export default function Dashboard() {
                     className="glass-panel p-5 rounded-2xl border border-zinc-850 bg-zinc-900/10 space-y-4 transition-all duration-200 hover:border-zinc-800"
                   >
                     {/* Header: Icon + Prompt */}
-                    <div className="flex items-center space-x-3.5">
-                      <div className="p-2 rounded-xl bg-teal-500/10 text-teal-400 border border-teal-500/10 shrink-0">
-                        <IconComponent className="w-4.5 h-4.5" />
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3.5">
+                        <div className="p-2 rounded-xl bg-teal-500/10 text-teal-400 border border-teal-500/10 shrink-0">
+                          <IconComponent className="w-4.5 h-4.5" />
+                        </div>
+                        <label className="block text-sm font-bold text-zinc-200">
+                          {q.prompt}
+                        </label>
                       </div>
-                      <label className="block text-sm font-bold text-zinc-200">
-                        {q.prompt}
-                      </label>
+
+                      {/* Voice-to-Text Dictation Button for Text Questions */}
+                      {q.type === 'text' && (
+                        <button
+                          type="button"
+                          onClick={() => toggleVoiceJournaling(q.id)}
+                          className={`p-2 rounded-xl border transition-all cursor-pointer ${
+                            isListening[q.id]
+                              ? 'bg-red-500/20 border-red-500/40 text-red-400 animate-pulse'
+                              : 'bg-zinc-900/60 border-zinc-850 text-zinc-400 hover:text-teal-400'
+                          }`}
+                          title="Voice Journaling (Dictate)"
+                        >
+                          {isListening[q.id] ? <MicOff className="w-4 h-4 text-red-400" /> : <Mic className="w-4 h-4" />}
+                        </button>
+                      )}
                     </div>
 
                     {/* One-Tap Boolean Selector */}
@@ -373,14 +502,16 @@ export default function Dashboard() {
 
                     {/* Text Reflection */}
                     {q.type === 'text' && (
-                      <textarea
-                        value={value ?? ''}
-                        onChange={(e) => handleAnswerChange(q.id, e.target.value)}
-                        placeholder="Reflect on your day..."
-                        required
-                        rows={3}
-                        className="w-full px-3.5 py-3 bg-zinc-950/65 border border-zinc-850 rounded-xl text-zinc-205 placeholder-zinc-650 focus:outline-none focus:ring-1 focus:ring-teal-450 focus:border-teal-450 text-sm leading-relaxed resize-none"
-                      />
+                      <div className="space-y-1.5">
+                        <textarea
+                          value={value ?? ''}
+                          onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                          placeholder="Reflect on your day... (Tap mic icon above to dictate)"
+                          required
+                          rows={3}
+                          className="w-full px-3.5 py-3 bg-zinc-950/65 border border-zinc-850 rounded-xl text-zinc-205 placeholder-zinc-650 focus:outline-none focus:ring-1 focus:ring-teal-450 focus:border-teal-450 text-sm leading-relaxed resize-none"
+                        />
+                      </div>
                     )}
                   </div>
                 );
@@ -394,7 +525,7 @@ export default function Dashboard() {
                 {submitting ? (
                   <Loader2 className="w-5 h-5 animate-spin text-zinc-950" />
                 ) : (
-                  <span>Submit Today's Reflections</span>
+                  <span>Submit Today's Reflections (+70 XP)</span>
                 )}
               </button>
             </div>
