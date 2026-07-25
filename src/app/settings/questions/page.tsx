@@ -50,9 +50,14 @@ export default function QuestionsSettings() {
   const [newType, setNewType] = useState('boolean');
   const [newHabitType, setNewHabitType] = useState<'good' | 'bad' | 'neutral'>('good');
   const [newIcon, setNewIcon] = useState('check-square');
+  
+  // Full Editing State
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingPrompt, setEditingPrompt] = useState('');
+  const [editingType, setEditingType] = useState('boolean');
   const [editingHabitType, setEditingHabitType] = useState<'good' | 'bad' | 'neutral'>('good');
+  const [editingIcon, setEditingIcon] = useState('check-square');
+
   const [selectedTheme, setSelectedTheme] = useState('teal');
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [hapticsEnabled, setHapticsEnabled] = useState(true);
@@ -280,32 +285,49 @@ export default function QuestionsSettings() {
   const startEditing = (q: any) => {
     setEditingId(q.id);
     setEditingPrompt(q.prompt);
+    setEditingType(q.type || 'boolean');
     setEditingHabitType(q.habit_type || 'good');
+    setEditingIcon(q.icon || 'check-square');
   };
 
   const handleSaveEdit = async (id: string) => {
     if (!editingPrompt.trim()) return;
     setSaving(true);
-    
+
+    // Optimistic UI update
+    setQuestions((prev) =>
+      prev.map((q) =>
+        q.id === id
+          ? { ...q, prompt: editingPrompt.trim(), type: editingType, habit_type: editingHabitType, icon: editingIcon }
+          : q
+      )
+    );
+
     try {
+      const updatePayload: any = {
+        prompt: editingPrompt.trim(),
+        type: editingType,
+        habit_type: editingHabitType,
+        icon: editingIcon,
+      };
+
       let { error } = await supabase
         .from('questions')
-        .update({ prompt: editingPrompt.trim(), habit_type: editingHabitType })
+        .update(updatePayload)
         .eq('id', id);
 
-      if (error && error.message.includes("habit_type")) {
-        const retry = await supabase
-          .from('questions')
-          .update({ prompt: editingPrompt.trim() })
-          .eq('id', id);
-        error = retry.error;
+      if (error) {
+        delete updatePayload.habit_type;
+        delete updatePayload.icon;
+        const retry = await supabase.from('questions').update(updatePayload).eq('id', id);
+        if (retry.error) throw retry.error;
       }
 
-      if (error) throw error;
       setEditingId(null);
       await fetchQuestions();
     } catch (err: any) {
       alert('Failed to update question: ' + err.message);
+      await fetchQuestions();
     } finally {
       setSaving(false);
     }
@@ -581,7 +603,7 @@ export default function QuestionsSettings() {
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-xs font-bold text-zinc-550 uppercase tracking-widest pl-1 font-ios-mono">
-            Your Questionnaire Prompts
+            Your Questionnaire Prompts ({questions.length})
           </h2>
 
           <button
@@ -616,49 +638,107 @@ export default function QuestionsSettings() {
               return (
                 <div 
                   key={q.id} 
-                  className={`craft-card p-4 border transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                  className={`craft-card p-4 border transition-all duration-200 ${
                     q.is_active 
                       ? 'border-zinc-850 bg-zinc-900/10' 
                       : 'border-zinc-850/40 bg-zinc-950/40 opacity-55'
                   }`}
                 >
-                  <div className="flex-1 space-y-1">
-                    {isEditingThis ? (
-                      <div className="flex flex-col sm:flex-row items-center gap-2">
-                        <input
-                          type="text"
-                          value={editingPrompt}
-                          onChange={(e) => setEditingPrompt(e.target.value)}
-                          className="w-full sm:flex-1 px-3 py-1.5 bg-zinc-950 border border-zinc-850 rounded-xl text-zinc-200 focus:outline-none text-sm font-medium"
-                        />
-                        <select
-                          value={editingHabitType}
-                          onChange={(e) => setEditingHabitType(e.target.value as any)}
-                          className="px-2.5 py-1.5 bg-zinc-950 border border-zinc-850 rounded-xl text-xs text-zinc-200 font-bold"
-                        >
-                          <option value="good">🟢 Good Habit</option>
-                          <option value="bad">🔴 Bad Habit</option>
-                          <option value="neutral">⚪ Neutral Metric</option>
-                        </select>
-                        <div className="flex space-x-1">
+                  {isEditingThis ? (
+                    /* Full Expanded Edit Form Box */
+                    <div className="space-y-4 p-2 bg-zinc-950/80 rounded-xl border border-teal-500/30">
+                      <div className="flex items-center justify-between border-b border-zinc-850 pb-2">
+                        <span className="text-xs font-bold text-teal-400 font-ios-mono">Editing Prompt #{idx + 1}</span>
+                        <div className="flex space-x-2">
                           <button
+                            type="button"
                             onClick={() => handleSaveEdit(q.id)}
-                            style={{ backgroundColor: 'var(--accent-glow)', color: 'var(--accent)', borderColor: 'var(--accent-border)' }}
-                            className="p-2 border rounded-lg cursor-pointer transition-colors"
-                            title="Save"
+                            disabled={saving}
+                            style={{ background: 'var(--accent-gradient)', color: '#09090b' }}
+                            className="px-3 py-1 rounded-lg font-bold text-xs flex items-center space-x-1 cursor-pointer"
                           >
-                            <Check className="w-4 h-4" />
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Save Changes</span>
                           </button>
                           <button
+                            type="button"
                             onClick={() => setEditingId(null)}
-                            className="p-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-850 text-zinc-450 rounded-lg cursor-pointer transition-colors"
-                            title="Cancel"
+                            className="px-3 py-1 rounded-lg font-bold text-xs bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-zinc-200 cursor-pointer"
                           >
-                            <X className="w-4 h-4" />
+                            <X className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </div>
-                    ) : (
+
+                      <div className="grid gap-3 sm:grid-cols-12">
+                        {/* Prompt text input */}
+                        <div className="sm:col-span-6 space-y-1">
+                          <label className="block text-[10px] font-bold text-zinc-500 font-ios-mono uppercase">Prompt text</label>
+                          <input
+                            type="text"
+                            value={editingPrompt}
+                            onChange={(e) => setEditingPrompt(e.target.value)}
+                            className="w-full px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-200 focus:outline-none text-xs font-ios-serif"
+                          />
+                        </div>
+
+                        {/* Answer Format */}
+                        <div className="sm:col-span-3 space-y-1">
+                          <label className="block text-[10px] font-bold text-zinc-500 font-ios-mono uppercase">Answer Format</label>
+                          <select
+                            value={editingType}
+                            onChange={(e) => setEditingType(e.target.value)}
+                            className="w-full px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-200 focus:outline-none text-xs font-ios-sans cursor-pointer"
+                          >
+                            <option value="boolean">Yes / No</option>
+                            <option value="number">Numeric Count</option>
+                            <option value="scale_1_to_5">1 - 5 Scale Rating</option>
+                            <option value="text">Reflection text</option>
+                          </select>
+                        </div>
+
+                        {/* Habit Category */}
+                        <div className="sm:col-span-3 space-y-1">
+                          <label className="block text-[10px] font-bold text-zinc-500 font-ios-mono uppercase">Category</label>
+                          <select
+                            value={editingHabitType}
+                            onChange={(e) => setEditingHabitType(e.target.value as any)}
+                            className="w-full px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-200 focus:outline-none text-xs font-ios-sans font-bold cursor-pointer"
+                          >
+                            <option value="good">🟢 Good Habit</option>
+                            <option value="bad">🔴 Bad Habit</option>
+                            <option value="neutral">⚪ Neutral Metric</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Icon Selector Grid inside Edit Box */}
+                      <div className="space-y-1">
+                        <label className="block text-[10px] font-bold text-zinc-500 font-ios-mono uppercase">Change Icon</label>
+                        <div className="grid grid-cols-6 gap-1.5 bg-zinc-900/60 p-2.5 rounded-xl border border-zinc-800 max-w-sm">
+                          {AVAILABLE_ICONS.map((item) => {
+                            const Icon = item.icon;
+                            const isSelected = editingIcon === item.name;
+                            return (
+                              <button
+                                key={item.name}
+                                type="button"
+                                onClick={() => setEditingIcon(item.name)}
+                                style={isSelected ? { backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-border)', color: 'var(--accent)' } : {}}
+                                className={`p-2 rounded-lg border transition-all flex items-center justify-center cursor-pointer ${
+                                  isSelected ? 'scale-105 shadow' : 'bg-zinc-950 border-transparent text-zinc-500 hover:text-zinc-300'
+                                }`}
+                              >
+                                <Icon className="w-4 h-4" />
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Display Mode Card */
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex items-start space-x-3.5">
                         <div className="p-2 rounded-xl bg-zinc-900/60 border border-zinc-850 text-zinc-400 shrink-0">
                           <IconComponent className="w-4.5 h-4.5" />
@@ -686,53 +766,51 @@ export default function QuestionsSettings() {
                           </span>
                         </div>
                       </div>
-                    )}
-                  </div>
 
-                  {/* Actions toolbar */}
-                  {!isEditingThis && (
-                    <div className="flex items-center justify-end space-x-1 shrink-0 self-end sm:self-auto font-ios-sans">
-                      <button
-                        onClick={() => handleMove(idx, 'up')}
-                        disabled={idx === 0}
-                        className="p-2 bg-zinc-950 hover:bg-zinc-900 border border-zinc-850 text-zinc-400 hover:text-zinc-200 disabled:opacity-20 rounded-lg cursor-pointer transition-colors"
-                        title="Move Up"
-                      >
-                        <ArrowUp className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleMove(idx, 'down')}
-                        disabled={idx === questions.length - 1}
-                        className="p-2 bg-zinc-950 hover:bg-zinc-900 border border-zinc-850 text-zinc-400 hover:text-zinc-200 disabled:opacity-20 rounded-lg cursor-pointer transition-colors"
-                        title="Move Down"
-                      >
-                        <ArrowDown className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => startEditing(q)}
-                        className="p-2 bg-zinc-950 hover:bg-zinc-900 border border-zinc-850 text-zinc-400 hover:text-zinc-200 rounded-lg cursor-pointer transition-colors"
-                        title="Edit text"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleToggleActive(q.id, q.is_active)}
-                        className={`p-2 border rounded-lg cursor-pointer transition-colors ${
-                          q.is_active 
-                            ? 'bg-zinc-955 border-zinc-850 text-teal-400' 
-                            : 'bg-zinc-950 border-zinc-850/50 text-zinc-600'
-                        }`}
-                        title={q.is_active ? 'Disable question' : 'Enable question'}
-                      >
-                        {q.is_active ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-                      </button>
-                      <button
-                        onClick={() => handleDeleteQuestion(q.id)}
-                        className="p-2 bg-red-500/5 border border-red-500/10 text-red-400 hover:bg-red-500/15 rounded-lg cursor-pointer transition-colors"
-                        title="Delete question"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      {/* Actions toolbar */}
+                      <div className="flex items-center justify-end space-x-1 shrink-0 self-end sm:self-auto font-ios-sans">
+                        <button
+                          onClick={() => handleMove(idx, 'up')}
+                          disabled={idx === 0}
+                          className="p-2 bg-zinc-950 hover:bg-zinc-900 border border-zinc-850 text-zinc-400 hover:text-zinc-200 disabled:opacity-20 rounded-lg cursor-pointer transition-colors"
+                          title="Move Up"
+                        >
+                          <ArrowUp className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleMove(idx, 'down')}
+                          disabled={idx === questions.length - 1}
+                          className="p-2 bg-zinc-950 hover:bg-zinc-900 border border-zinc-850 text-zinc-400 hover:text-zinc-200 disabled:opacity-20 rounded-lg cursor-pointer transition-colors"
+                          title="Move Down"
+                        >
+                          <ArrowDown className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => startEditing(q)}
+                          className="p-2 bg-zinc-950 hover:bg-zinc-900 border border-zinc-850 text-teal-400 hover:text-teal-300 rounded-lg cursor-pointer transition-colors"
+                          title="Edit prompt, category & format"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleToggleActive(q.id, q.is_active)}
+                          className={`p-2 border rounded-lg cursor-pointer transition-colors ${
+                            q.is_active 
+                              ? 'bg-zinc-955 border-zinc-850 text-teal-400' 
+                              : 'bg-zinc-950 border-zinc-850/50 text-zinc-600'
+                          }`}
+                          title={q.is_active ? 'Disable question' : 'Enable question'}
+                        >
+                          {q.is_active ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteQuestion(q.id)}
+                          className="p-2 bg-red-500/5 border border-red-500/10 text-red-400 hover:bg-red-500/15 rounded-lg cursor-pointer transition-colors"
+                          title="Delete question"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
