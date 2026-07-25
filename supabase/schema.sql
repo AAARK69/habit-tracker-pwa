@@ -7,11 +7,13 @@ CREATE TABLE IF NOT EXISTS public.questions (
     order_index INTEGER NOT NULL DEFAULT 0,
     is_active BOOLEAN NOT NULL DEFAULT true,
     icon TEXT NOT NULL DEFAULT 'help-circle',
+    habit_type TEXT NOT NULL DEFAULT 'good' CHECK (habit_type IN ('good', 'bad', 'neutral')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
 -- Migration query in case table already exists
 ALTER TABLE public.questions ADD COLUMN IF NOT EXISTS icon TEXT NOT NULL DEFAULT 'help-circle';
+ALTER TABLE public.questions ADD COLUMN IF NOT EXISTS habit_type TEXT NOT NULL DEFAULT 'good';
 
 -- Create Daily Logs Table (responses stored in JSONB)
 CREATE TABLE IF NOT EXISTS public.daily_logs (
@@ -96,12 +98,12 @@ CREATE POLICY "Users can manage their own goals"
 CREATE OR REPLACE FUNCTION public.handle_new_user_setup()
 RETURNS trigger AS $$
 BEGIN
-    INSERT INTO public.questions (user_id, prompt, type, order_index, icon)
+    INSERT INTO public.questions (user_id, prompt, type, order_index, icon, habit_type)
     VALUES
-        (new.id, 'Did you exercise today?', 'boolean', 0, 'dumbbell'),
-        (new.id, 'Hours of sleep last night', 'number', 1, 'bed'),
-        (new.id, 'Overall mood today', 'scale_1_to_5', 2, 'smile'),
-        (new.id, 'What was the highlight of your day?', 'text', 3, 'sparkles');
+        (new.id, 'Did you exercise today?', 'boolean', 0, 'dumbbell', 'good'),
+        (new.id, 'Hours of sleep last night', 'number', 1, 'bed', 'neutral'),
+        (new.id, 'Overall mood today', 'scale_1_to_5', 2, 'smile', 'neutral'),
+        (new.id, 'What was the highlight of your day?', 'text', 3, 'sparkles', 'neutral');
     RETURN new;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

@@ -70,10 +70,13 @@ export default function ChartsPage() {
     const qA = questions.find((q) => q.id === metricAId);
     const qB = questions.find((q) => q.id === metricBId);
 
-    const parseVal = (resp: any, type: string) => {
+    const parseVal = (resp: any, q: any) => {
       if (resp === undefined || resp === null || resp === '') return 0;
-      if (type === 'boolean') return resp === true ? 1 : 0;
-      if (type === 'number' || type === 'scale_1_to_5') return Number(resp) || 0;
+      if (q?.type === 'boolean') {
+        if (q?.habit_type === 'bad') return resp === false ? 1 : 0; // Avoidance score for bad habits
+        return resp === true ? 1 : 0;
+      }
+      if (q?.type === 'number' || q?.type === 'scale_1_to_5') return Number(resp) || 0;
       return 1;
     };
 
@@ -83,8 +86,8 @@ export default function ChartsPage() {
       const rawA = log.responses?.[metricAId];
       const rawB = log.responses?.[metricBId];
 
-      const valA = parseVal(rawA, qA?.type || 'number');
-      const valB = parseVal(rawB, qB?.type || 'number');
+      const valA = parseVal(rawA, qA);
+      const valB = parseVal(rawB, qB);
 
       return {
         date: dateLabel,
@@ -130,7 +133,7 @@ export default function ChartsPage() {
     const labelB = qB?.prompt.length > 25 ? qB?.prompt.slice(0, 25) + '...' : qB?.prompt;
 
     if (r > 0.4) {
-      return `📈 Strong Positive Alignment: Higher values in "${labelA}" consistently align with higher outcomes in "${labelB}" (r = ${r.toFixed(2)}).`;
+      return `📈 Strong Alignment: Higher values in "${labelA}" consistently align with higher outcomes in "${labelB}" (r = ${r.toFixed(2)}).`;
     } else if (r < -0.4) {
       return `📉 Inverse Correlation: Higher values in "${labelA}" correspond to lower outcomes in "${labelB}" (r = ${r.toFixed(2)}).`;
     } else {
@@ -163,24 +166,34 @@ export default function ChartsPage() {
     return data;
   };
 
-  // 4. Prepare Habit Completion Rates
+  // 4. Prepare Habit Completion Rates (Supports Bad Habit Avoidance Rates!)
   const getHabitCompletionData = () => {
     if (!questions || questions.length === 0 || !logs || logs.length === 0) return [];
 
     return questions.map((q) => {
-      let completedCount = 0;
+      let successCount = 0;
+      const isBadHabit = q.habit_type === 'bad';
+
       logs.forEach((log) => {
         const resp = log.responses?.[q.id];
         if (resp !== undefined && resp !== null && resp !== '') {
-          if (q.type === 'boolean' && resp === true) completedCount++;
-          else if (q.type !== 'boolean') completedCount++;
+          if (q.type === 'boolean') {
+            if (isBadHabit && resp === false) successCount++; // Avoided bad habit!
+            else if (!isBadHabit && resp === true) successCount++;
+          } else {
+            successCount++;
+          }
         }
       });
 
-      const rate = Math.round((completedCount / logs.length) * 100);
+      const rate = Math.round((successCount / logs.length) * 100);
+      const prefix = isBadHabit ? 'Avoided ' : '';
+      const promptText = q.prompt.length > 16 ? q.prompt.slice(0, 16) + '...' : q.prompt;
+
       return {
-        name: q.prompt.length > 18 ? q.prompt.slice(0, 18) + '...' : q.prompt,
+        name: `${prefix}${promptText}`,
         completionRate: rate,
+        habitType: q.habit_type || 'good',
       };
     });
   };
@@ -265,7 +278,7 @@ export default function ChartsPage() {
           Performance Charts
         </h1>
         <p className="text-base text-zinc-400 font-handwritten text-xl leading-snug">
-          Visual metrics, habit completion rates, and custom metric correlation analysis.
+          Visual metrics, habit completion rates (Good 🟢 vs Bad 🔴 Avoidance), and correlation analysis.
         </p>
       </div>
 
@@ -343,7 +356,7 @@ export default function ChartsPage() {
             >
               {questions.map((q) => (
                 <option key={q.id} value={q.id}>
-                  {q.prompt} ({q.type})
+                  {q.habit_type === 'bad' ? '🔴' : q.habit_type === 'good' ? '🟢' : '⚪'} {q.prompt} ({q.type})
                 </option>
               ))}
             </select>
@@ -360,7 +373,7 @@ export default function ChartsPage() {
             >
               {questions.map((q) => (
                 <option key={q.id} value={q.id}>
-                  {q.prompt} ({q.type})
+                  {q.habit_type === 'bad' ? '🔴' : q.habit_type === 'good' ? '🟢' : '⚪'} {q.prompt} ({q.type})
                 </option>
               ))}
             </select>
@@ -420,7 +433,7 @@ export default function ChartsPage() {
         </div>
       </div>
 
-      {/* Main Charts Grid: 2-column on 16:9 PC Desktop vs 1-column on Mobile */}
+      {/* Main Charts Grid */}
       <div className={`grid gap-6 ${isDesktop ? 'grid-cols-2' : 'grid-cols-1'}`}>
         
         {/* Chart 1: 14-Day Check-in Activity Trend */}
@@ -446,14 +459,14 @@ export default function ChartsPage() {
           </div>
         </div>
 
-        {/* Chart 2: Habit Completion Rates Bar Chart */}
+        {/* Chart 2: Habit Completion & Bad Habit Avoidance Rates */}
         <div className="craft-card p-5 space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <Award className="w-4 h-4 text-emerald-400" />
-              <h2 className="text-sm font-bold text-zinc-200 font-ios-sans">Habit Completion Rates (%)</h2>
+              <h2 className="text-sm font-bold text-zinc-200 font-ios-sans">Habit Success Rates (%)</h2>
             </div>
-            <span className="text-[10px] text-zinc-500 font-ios-mono">By Prompt</span>
+            <span className="text-[10px] text-zinc-500 font-ios-mono">Good / Bad Avoidance</span>
           </div>
 
           <div className="h-60 w-full pt-2">
@@ -466,9 +479,9 @@ export default function ChartsPage() {
                 <BarChart data={habitData} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                   <XAxis type="number" domain={[0, 100]} stroke="#71717a" fontSize={10} />
-                  <YAxis type="category" dataKey="name" stroke="#71717a" fontSize={10} width={100} tickLine={false} />
+                  <YAxis type="category" dataKey="name" stroke="#71717a" fontSize={10} width={110} tickLine={false} />
                   <Tooltip content={<CUSTOM_TOOLTIP />} />
-                  <Bar dataKey="completionRate" name="Completion Rate (%)" fill="#10b981" radius={[0, 6, 6, 0]} />
+                  <Bar dataKey="completionRate" name="Success Rate (%)" fill="#10b981" radius={[0, 6, 6, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}

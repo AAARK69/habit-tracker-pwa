@@ -18,7 +18,7 @@ import {
   Brain, Flame, Heart, Coffee, ClipboardList, CheckSquare, 
   HelpCircle, CheckCircle, Edit3, Loader2, Check, X, 
   MessageSquare, ShieldCheck, Award, Lightbulb, Share2, 
-  Mic, MicOff, Trophy, PenTool, Activity, Shuffle
+  Mic, MicOff, Trophy, PenTool, Activity, Shuffle, ShieldAlert
 } from 'lucide-react';
 
 const IconMap: Record<string, any> = {
@@ -326,7 +326,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Streamlined Header */}
+      {/* Header */}
       <div className="flex items-center justify-between gap-4">
         <div className="space-y-1">
           <h1 className="text-3xl font-extrabold text-zinc-50 tracking-tight font-ios-serif">
@@ -485,6 +485,7 @@ export default function Dashboard() {
                       const value = answers[q.id];
                       const IconComponent = IconMap[q.icon] || HelpCircle;
                       const isFullWidth = q.type === 'text';
+                      const habitType = q.habit_type || 'good';
 
                       return (
                         <div 
@@ -493,7 +494,7 @@ export default function Dashboard() {
                             isFullWidth ? 'col-span-full' : ''
                           }`}
                         >
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center justify-between gap-2">
                             <div className="flex items-center space-x-3">
                               <div 
                                 className="p-1.5 rounded-xl border shrink-0"
@@ -501,9 +502,15 @@ export default function Dashboard() {
                               >
                                 <IconComponent className="w-4 h-4" />
                               </div>
-                              <label className="block text-xs font-bold text-zinc-200 font-ios-sans">
-                                {q.prompt}
-                              </label>
+                              <div className="space-y-0.5">
+                                <label className="block text-xs font-bold text-zinc-200 font-ios-sans">
+                                  {q.prompt}
+                                </label>
+                                {/* Habit Category Tag */}
+                                <span className="inline-block text-[9px] font-bold font-ios-mono opacity-70">
+                                  {habitType === 'good' ? '🟢 Good Habit' : habitType === 'bad' ? '🔴 Bad Habit' : '⚪ Neutral'}
+                                </span>
+                              </div>
                             </div>
 
                             {q.type === 'text' && (
@@ -524,32 +531,43 @@ export default function Dashboard() {
 
                           {/* One-Tap Yes/No Buttons */}
                           {q.type === 'boolean' && (
-                            <div className="flex space-x-2 font-ios-rounded">
-                              <button
-                                type="button"
-                                onClick={() => handleAnswerChange(q.id, true)}
-                                style={value === true ? { backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-border)', color: 'var(--accent)' } : {}}
-                                className={`flex-1 py-2 rounded-xl text-xs font-extrabold border transition-all flex items-center justify-center space-x-1 cursor-pointer ${
-                                  value === true
-                                    ? 'shadow'
-                                    : 'bg-zinc-900/40 border-zinc-850 text-zinc-450 hover:text-zinc-200'
-                                }`}
-                              >
-                                <Check className={`w-3.5 h-3.5 ${value === true ? 'scale-110' : ''}`} />
-                                <span>Yes</span>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleAnswerChange(q.id, false)}
-                                className={`flex-1 py-2 rounded-xl text-xs font-extrabold border transition-all flex items-center justify-center space-x-1 cursor-pointer ${
-                                  value === false
-                                    ? 'bg-red-500/10 border-red-500/40 text-red-400 shadow'
-                                    : 'bg-zinc-900/40 border-zinc-850 text-zinc-450 hover:text-zinc-200'
-                                }`}
-                              >
-                                <X className={`w-3.5 h-3.5 ${value === false ? 'scale-110' : ''}`} />
-                                <span>No</span>
-                              </button>
+                            <div className="space-y-1.5 font-ios-rounded">
+                              <div className="flex space-x-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleAnswerChange(q.id, true)}
+                                  style={value === true ? (habitType === 'bad' ? { backgroundColor: 'rgba(239, 68, 68, 0.15)', borderColor: 'rgba(239, 68, 68, 0.4)', color: '#f87171' } : { backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-border)', color: 'var(--accent)' }) : {}}
+                                  className={`flex-1 py-2 rounded-xl text-xs font-extrabold border transition-all flex items-center justify-center space-x-1 cursor-pointer ${
+                                    value === true
+                                      ? 'shadow'
+                                      : 'bg-zinc-900/40 border-zinc-850 text-zinc-450 hover:text-zinc-200'
+                                  }`}
+                                >
+                                  <Check className={`w-3.5 h-3.5 ${value === true ? 'scale-110' : ''}`} />
+                                  <span>Yes</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleAnswerChange(q.id, false)}
+                                  style={value === false ? (habitType === 'bad' ? { backgroundColor: 'rgba(16, 185, 129, 0.15)', borderColor: 'rgba(16, 185, 129, 0.4)', color: '#34d399' } : {}) : {}}
+                                  className={`flex-1 py-2 rounded-xl text-xs font-extrabold border transition-all flex items-center justify-center space-x-1 cursor-pointer ${
+                                    value === false
+                                      ? (habitType === 'bad' ? 'shadow' : 'bg-red-500/10 border-red-500/40 text-red-400 shadow')
+                                      : 'bg-zinc-900/40 border-zinc-850 text-zinc-450 hover:text-zinc-200'
+                                  }`}
+                                >
+                                  <X className={`w-3.5 h-3.5 ${value === false ? 'scale-110' : ''}`} />
+                                  <span>No</span>
+                                </button>
+                              </div>
+
+                              {/* Bad Habit Avoidance Cue Banner */}
+                              {habitType === 'bad' && value === false && (
+                                <div className="p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-[10px] font-ios-mono flex items-center space-x-1">
+                                  <ShieldCheck className="w-3 h-3 text-emerald-400 shrink-0" />
+                                  <span>Avoided! Great self-control 🛡️ (+20 bonus XP)</span>
+                                </div>
+                              )}
                             </div>
                           )}
 

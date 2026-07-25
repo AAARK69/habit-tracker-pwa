@@ -9,7 +9,7 @@ import {
   Brain, Flame, Heart, Coffee, ClipboardList, CheckSquare, 
   HelpCircle, Plus, Trash2, Edit2, Check, X, ArrowUp, 
   ArrowDown, Eye, EyeOff, Loader2, Download, Palette, FileSpreadsheet, FileCode,
-  Volume2, VolumeX, Smartphone, Clock, RotateCcw, Shuffle
+  Volume2, VolumeX, Smartphone, Clock, RotateCcw, Shuffle, ShieldAlert, ShieldCheck, Activity
 } from 'lucide-react';
 
 const AVAILABLE_ICONS = [
@@ -48,9 +48,11 @@ export default function QuestionsSettings() {
   const [questions, setQuestions] = useState<any[]>([]);
   const [newPrompt, setNewPrompt] = useState('');
   const [newType, setNewType] = useState('boolean');
+  const [newHabitType, setNewHabitType] = useState<'good' | 'bad' | 'neutral'>('good');
   const [newIcon, setNewIcon] = useState('check-square');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingPrompt, setEditingPrompt] = useState('');
+  const [editingHabitType, setEditingHabitType] = useState<'good' | 'bad' | 'neutral'>('good');
   const [selectedTheme, setSelectedTheme] = useState('teal');
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [hapticsEnabled, setHapticsEnabled] = useState(true);
@@ -134,16 +136,16 @@ export default function QuestionsSettings() {
 
     try {
       const defaultPrompts = [
-        { user_id: user.id, prompt: 'Did you exercise today?', type: 'boolean', order_index: 0, icon: 'dumbbell' },
-        { user_id: user.id, prompt: 'Hours of sleep last night', type: 'number', order_index: 1, icon: 'bed' },
-        { user_id: user.id, prompt: 'Overall mood today', type: 'scale_1_to_5', order_index: 2, icon: 'smile' },
-        { user_id: user.id, prompt: 'What was the highlight of your day?', type: 'text', order_index: 3, icon: 'sparkles' },
+        { user_id: user.id, prompt: 'Did you exercise today?', type: 'boolean', habit_type: 'good', order_index: 0, icon: 'dumbbell' },
+        { user_id: user.id, prompt: 'Hours of sleep last night', type: 'number', habit_type: 'neutral', order_index: 1, icon: 'bed' },
+        { user_id: user.id, prompt: 'Overall mood today', type: 'scale_1_to_5', habit_type: 'neutral', order_index: 2, icon: 'smile' },
+        { user_id: user.id, prompt: 'What was the highlight of your day?', type: 'text', habit_type: 'neutral', order_index: 3, icon: 'sparkles' },
       ];
 
       let { error } = await supabase.from('questions').insert(defaultPrompts);
       
-      if (error && (error.message.includes("icon") || error.message.includes("schema cache") || error.message.includes("column"))) {
-        const fallbackPrompts = defaultPrompts.map(({ icon, ...rest }) => rest);
+      if (error && (error.message.includes("habit_type") || error.message.includes("icon") || error.message.includes("column"))) {
+        const fallbackPrompts = defaultPrompts.map(({ habit_type, icon, ...rest }) => rest);
         const retry = await supabase.from('questions').insert(fallbackPrompts);
         error = retry.error;
       }
@@ -212,6 +214,7 @@ export default function QuestionsSettings() {
         user_id: user.id,
         prompt: newPrompt.trim(),
         type: newType,
+        habit_type: newHabitType,
         order_index: maxIndex + 1,
         is_active: true,
         icon: newIcon,
@@ -221,15 +224,20 @@ export default function QuestionsSettings() {
         .from('questions')
         .insert(insertPayload);
 
-      if (error && (error.message.includes("icon") || error.message.includes("schema cache") || error.message.includes("column"))) {
-        delete insertPayload.icon;
-        const retry = await supabase.from('questions').insert(insertPayload);
+      if (error && (error.message.includes("habit_type") || error.message.includes("icon") || error.message.includes("column"))) {
+        delete insertPayload.habit_type;
+        let retry = await supabase.from('questions').insert(insertPayload);
+        if (retry.error) {
+          delete insertPayload.icon;
+          retry = await supabase.from('questions').insert(insertPayload);
+        }
         error = retry.error;
       }
 
       if (error) throw error;
 
       setNewPrompt('');
+      setNewHabitType('good');
       setNewIcon('check-square');
       await fetchQuestions();
     } catch (err: any) {
@@ -269,9 +277,10 @@ export default function QuestionsSettings() {
     }
   };
 
-  const startEditing = (id: string, prompt: string) => {
-    setEditingId(id);
-    setEditingPrompt(prompt);
+  const startEditing = (q: any) => {
+    setEditingId(q.id);
+    setEditingPrompt(q.prompt);
+    setEditingHabitType(q.habit_type || 'good');
   };
 
   const handleSaveEdit = async (id: string) => {
@@ -279,10 +288,18 @@ export default function QuestionsSettings() {
     setSaving(true);
     
     try {
-      const { error } = await supabase
+      let { error } = await supabase
         .from('questions')
-        .update({ prompt: editingPrompt.trim() })
+        .update({ prompt: editingPrompt.trim(), habit_type: editingHabitType })
         .eq('id', id);
+
+      if (error && error.message.includes("habit_type")) {
+        const retry = await supabase
+          .from('questions')
+          .update({ prompt: editingPrompt.trim() })
+          .eq('id', id);
+        error = retry.error;
+      }
 
       if (error) throw error;
       setEditingId(null);
@@ -342,7 +359,7 @@ export default function QuestionsSettings() {
           Settings & Preferences
         </h1>
         <p className="text-base text-zinc-400 font-handwritten text-xl leading-snug">
-          Tailor your daily journal prompts, change accent color themes, and export your data.
+          Tailor your habit prompts (Good 🟢, Bad 🔴, Neutral ⚪), UI themes, and data exports.
         </p>
       </div>
 
@@ -471,55 +488,28 @@ export default function QuestionsSettings() {
         </div>
       </div>
 
-      {/* Data Export & Backup Section */}
-      <div className="craft-card p-5 space-y-3">
-        <div className="flex items-center space-x-2">
-          <Download className="w-4 h-4" style={{ color: 'var(--accent)' }} />
-          <h2 className="text-sm font-bold text-zinc-300 font-ios-sans">Export Journal Data</h2>
-        </div>
-        <p className="text-xs text-zinc-400 leading-relaxed font-handwritten text-lg">
-          Export your reflection entries for backup or offline review.
-        </p>
-        <div className="flex space-x-3 pt-1">
-          <button
-            onClick={() => handleExportData('csv')}
-            disabled={exporting}
-            className="flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-zinc-950 border border-zinc-850 hover:border-zinc-700 text-zinc-200 transition-colors cursor-pointer disabled:opacity-50 font-ios-sans"
-          >
-            <FileSpreadsheet className="w-4 h-4" style={{ color: 'var(--accent)' }} />
-            <span>Export CSV</span>
-          </button>
-          <button
-            onClick={() => handleExportData('json')}
-            disabled={exporting}
-            className="flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-zinc-950 border border-zinc-850 hover:border-zinc-700 text-zinc-200 transition-colors cursor-pointer disabled:opacity-50 font-ios-sans"
-          >
-            <FileCode className="w-4 h-4" style={{ color: 'var(--accent)' }} />
-            <span>Export JSON</span>
-          </button>
-        </div>
-      </div>
-
       {/* Add new question form */}
       <div className="craft-card p-5 space-y-4">
         <h2 className="text-sm font-bold text-zinc-300 font-ios-sans">
           Add Custom Journal Prompt
         </h2>
         <form onSubmit={handleAddQuestion} className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div className="sm:col-span-2 space-y-1">
+          <div className="grid gap-4 sm:grid-cols-12">
+            {/* Prompt Text Input */}
+            <div className="sm:col-span-6 space-y-1">
               <label className="block text-xs font-semibold text-zinc-500 font-ios-mono uppercase tracking-wider pl-0.5">Prompt text</label>
               <input
                 type="text"
                 required
-                placeholder="e.g. Did you read at least 10 pages today?"
+                placeholder="e.g. Did you exercise today? or Late night screen time?"
                 value={newPrompt}
                 onChange={(e) => setNewPrompt(e.target.value)}
                 className="w-full px-3 py-2.5 bg-zinc-950/65 border border-zinc-850 rounded-xl text-zinc-200 placeholder-zinc-650 focus:outline-none text-sm font-ios-serif"
               />
             </div>
 
-            <div className="space-y-1">
+            {/* Answer Format */}
+            <div className="sm:col-span-3 space-y-1">
               <label className="block text-xs font-semibold text-zinc-500 font-ios-mono uppercase tracking-wider pl-0.5">Answer format</label>
               <select
                 value={newType}
@@ -530,6 +520,20 @@ export default function QuestionsSettings() {
                 <option value="number">Numeric Count</option>
                 <option value="scale_1_to_5">1 - 5 Scale Rating</option>
                 <option value="text">Reflection text</option>
+              </select>
+            </div>
+
+            {/* Habit Type Selector (Good / Bad / Neutral) */}
+            <div className="sm:col-span-3 space-y-1">
+              <label className="block text-xs font-semibold text-zinc-500 font-ios-mono uppercase tracking-wider pl-0.5">Habit Category</label>
+              <select
+                value={newHabitType}
+                onChange={(e) => setNewHabitType(e.target.value as any)}
+                className="w-full px-3 py-2.5 bg-zinc-950/65 border border-zinc-850 rounded-xl text-zinc-200 focus:outline-none text-sm cursor-pointer font-ios-sans font-bold"
+              >
+                <option value="good">🟢 Good Habit (Build)</option>
+                <option value="bad">🔴 Bad Habit (Break)</option>
+                <option value="neutral">⚪ Neutral Metric (Track)</option>
               </select>
             </div>
           </div>
@@ -600,6 +604,7 @@ export default function QuestionsSettings() {
               const isEditingThis = editingId === q.id;
               const iconKey = q.icon || 'help-circle';
               const IconComponent = IconMap[iconKey] || HelpCircle;
+              const habitType = q.habit_type || 'good';
               
               const typeLabels: Record<string, string> = {
                 boolean: 'Yes/No',
@@ -619,28 +624,39 @@ export default function QuestionsSettings() {
                 >
                   <div className="flex-1 space-y-1">
                     {isEditingThis ? (
-                      <div className="flex items-center space-x-2">
+                      <div className="flex flex-col sm:flex-row items-center gap-2">
                         <input
                           type="text"
                           value={editingPrompt}
                           onChange={(e) => setEditingPrompt(e.target.value)}
-                          className="flex-1 px-3 py-1.5 bg-zinc-950 border border-zinc-850 rounded-xl text-zinc-200 focus:outline-none text-sm font-medium"
+                          className="w-full sm:flex-1 px-3 py-1.5 bg-zinc-950 border border-zinc-850 rounded-xl text-zinc-200 focus:outline-none text-sm font-medium"
                         />
-                        <button
-                          onClick={() => handleSaveEdit(q.id)}
-                          style={{ backgroundColor: 'var(--accent-glow)', color: 'var(--accent)', borderColor: 'var(--accent-border)' }}
-                          className="p-2 border rounded-lg cursor-pointer transition-colors"
-                          title="Save"
+                        <select
+                          value={editingHabitType}
+                          onChange={(e) => setEditingHabitType(e.target.value as any)}
+                          className="px-2.5 py-1.5 bg-zinc-950 border border-zinc-850 rounded-xl text-xs text-zinc-200 font-bold"
                         >
-                          <Check className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => setEditingId(null)}
-                          className="p-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-850 text-zinc-450 rounded-lg cursor-pointer transition-colors"
-                          title="Cancel"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
+                          <option value="good">🟢 Good Habit</option>
+                          <option value="bad">🔴 Bad Habit</option>
+                          <option value="neutral">⚪ Neutral Metric</option>
+                        </select>
+                        <div className="flex space-x-1">
+                          <button
+                            onClick={() => handleSaveEdit(q.id)}
+                            style={{ backgroundColor: 'var(--accent-glow)', color: 'var(--accent)', borderColor: 'var(--accent-border)' }}
+                            className="p-2 border rounded-lg cursor-pointer transition-colors"
+                            title="Save"
+                          >
+                            <Check className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => setEditingId(null)}
+                            className="p-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-850 text-zinc-450 rounded-lg cursor-pointer transition-colors"
+                            title="Cancel"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                     ) : (
                       <div className="flex items-start space-x-3.5">
@@ -648,7 +664,23 @@ export default function QuestionsSettings() {
                           <IconComponent className="w-4.5 h-4.5" />
                         </div>
                         <div className="space-y-1">
-                          <p className="text-sm font-bold text-zinc-200 leading-snug font-ios-serif">{q.prompt}</p>
+                          <div className="flex items-center space-x-2">
+                            <p className="text-sm font-bold text-zinc-200 leading-snug font-ios-serif">{q.prompt}</p>
+                            
+                            {/* Habit Type Badge */}
+                            <span 
+                              className={`text-[9px] font-bold font-ios-mono uppercase px-2 py-0.5 rounded-full border ${
+                                habitType === 'good'
+                                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                                  : habitType === 'bad'
+                                  ? 'bg-red-500/10 text-red-400 border-red-500/30'
+                                  : 'bg-zinc-800/40 text-zinc-400 border-zinc-700/40'
+                              }`}
+                            >
+                              {habitType === 'good' ? '🟢 Good Habit' : habitType === 'bad' ? '🔴 Bad Habit' : '⚪ Neutral Metric'}
+                            </span>
+                          </div>
+
                           <span className="inline-block px-2 py-0.5 bg-zinc-950/80 border border-zinc-900 rounded text-[10px] text-zinc-500 font-ios-mono">
                             {typeLabels[q.type]}
                           </span>
@@ -677,7 +709,7 @@ export default function QuestionsSettings() {
                         <ArrowDown className="w-3.5 h-3.5" />
                       </button>
                       <button
-                        onClick={() => startEditing(q.id, q.prompt)}
+                        onClick={() => startEditing(q)}
                         className="p-2 bg-zinc-950 hover:bg-zinc-900 border border-zinc-850 text-zinc-400 hover:text-zinc-200 rounded-lg cursor-pointer transition-colors"
                         title="Edit text"
                       >
@@ -708,6 +740,35 @@ export default function QuestionsSettings() {
             })}
           </div>
         )}
+      </div>
+
+      {/* Data Export & Backup Section */}
+      <div className="craft-card p-5 space-y-3">
+        <div className="flex items-center space-x-2">
+          <Download className="w-4 h-4" style={{ color: 'var(--accent)' }} />
+          <h2 className="text-sm font-bold text-zinc-300 font-ios-sans">Export Journal Data</h2>
+        </div>
+        <p className="text-xs text-zinc-400 leading-relaxed font-handwritten text-lg">
+          Export your reflection entries for backup or offline review.
+        </p>
+        <div className="flex space-x-3 pt-1">
+          <button
+            onClick={() => handleExportData('csv')}
+            disabled={exporting}
+            className="flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-zinc-950 border border-zinc-850 hover:border-zinc-700 text-zinc-200 transition-colors cursor-pointer disabled:opacity-50 font-ios-sans"
+          >
+            <FileSpreadsheet className="w-4 h-4" style={{ color: 'var(--accent)' }} />
+            <span>Export CSV</span>
+          </button>
+          <button
+            onClick={() => handleExportData('json')}
+            disabled={exporting}
+            className="flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-zinc-950 border border-zinc-850 hover:border-zinc-700 text-zinc-200 transition-colors cursor-pointer disabled:opacity-50 font-ios-sans"
+          >
+            <FileCode className="w-4 h-4" style={{ color: 'var(--accent)' }} />
+            <span>Export JSON</span>
+          </button>
+        </div>
       </div>
     </div>
   );
