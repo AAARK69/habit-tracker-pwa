@@ -67,6 +67,22 @@ export default function QuestionsSettings() {
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
 
+  const getLocalHabitTypeMap = (): Record<string, string> => {
+    if (typeof window === 'undefined') return {};
+    try {
+      return JSON.parse(localStorage.getItem('reflect_habit_types') || '{}');
+    } catch {
+      return {};
+    }
+  };
+
+  const saveLocalHabitType = (qId: string, habitType: string) => {
+    if (typeof window === 'undefined') return;
+    const current = getLocalHabitTypeMap();
+    current[qId] = habitType;
+    localStorage.setItem('reflect_habit_types', JSON.stringify(current));
+  };
+
   const fetchQuestions = async () => {
     if (!user) return;
     setLoading(true);
@@ -78,7 +94,14 @@ export default function QuestionsSettings() {
         .order('order_index', { ascending: true });
 
       if (error) throw error;
-      setQuestions(data || []);
+      
+      const localHabits = getLocalHabitTypeMap();
+      const merged = (data || []).map((q: any) => ({
+        ...q,
+        habit_type: localHabits[q.id] || q.habit_type || 'good',
+      }));
+
+      setQuestions(merged);
     } catch (err) {
       console.error('Error fetching questions:', err);
     } finally {
@@ -147,15 +170,23 @@ export default function QuestionsSettings() {
         { user_id: user.id, prompt: 'What was the highlight of your day?', type: 'text', habit_type: 'neutral', order_index: 3, icon: 'sparkles' },
       ];
 
-      let { error } = await supabase.from('questions').insert(defaultPrompts);
+      let { data, error } = await supabase.from('questions').insert(defaultPrompts).select();
       
       if (error && (error.message.includes("habit_type") || error.message.includes("icon") || error.message.includes("column"))) {
         const fallbackPrompts = defaultPrompts.map(({ habit_type, icon, ...rest }) => rest);
-        const retry = await supabase.from('questions').insert(fallbackPrompts);
+        const retry = await supabase.from('questions').insert(fallbackPrompts).select();
         error = retry.error;
+        data = retry.data;
       }
 
       if (error) throw error;
+
+      if (data) {
+        data.forEach((q: any, i: number) => {
+          saveLocalHabitType(q.id, defaultPrompts[i]?.habit_type || 'good');
+        });
+      }
+
       await fetchQuestions();
     } catch (err: any) {
       alert('Failed to reset defaults: ' + err.message);
@@ -225,21 +256,28 @@ export default function QuestionsSettings() {
         icon: newIcon,
       };
 
-      let { error } = await supabase
+      let { data, error } = await supabase
         .from('questions')
-        .insert(insertPayload);
+        .insert(insertPayload)
+        .select()
+        .single();
 
       if (error && (error.message.includes("habit_type") || error.message.includes("icon") || error.message.includes("column"))) {
         delete insertPayload.habit_type;
-        let retry = await supabase.from('questions').insert(insertPayload);
+        let retry = await supabase.from('questions').insert(insertPayload).select().single();
         if (retry.error) {
           delete insertPayload.icon;
-          retry = await supabase.from('questions').insert(insertPayload);
+          retry = await supabase.from('questions').insert(insertPayload).select().single();
         }
         error = retry.error;
+        data = retry.data;
       }
 
       if (error) throw error;
+
+      if (data) {
+        saveLocalHabitType(data.id, newHabitType);
+      }
 
       setNewPrompt('');
       setNewHabitType('good');
@@ -294,6 +332,9 @@ export default function QuestionsSettings() {
     if (!editingPrompt.trim()) return;
     setSaving(true);
 
+    // Save locally immediately
+    saveLocalHabitType(id, editingHabitType);
+
     // Optimistic UI update
     setQuestions((prev) =>
       prev.map((q) =>
@@ -326,7 +367,8 @@ export default function QuestionsSettings() {
       setEditingId(null);
       await fetchQuestions();
     } catch (err: any) {
-      alert('Failed to update question: ' + err.message);
+      console.error('Database update notice:', err.message);
+      setEditingId(null);
       await fetchQuestions();
     } finally {
       setSaving(false);
@@ -646,7 +688,7 @@ export default function QuestionsSettings() {
                 >
                   {isEditingThis ? (
                     /* Full Expanded Edit Form Box */
-                    <div className="space-y-4 p-2 bg-zinc-950/80 rounded-xl border border-teal-500/30">
+                    <div className="space-y-4 p-3 bg-zinc-950/90 rounded-xl border border-teal-500/40">
                       <div className="flex items-center justify-between border-b border-zinc-850 pb-2">
                         <span className="text-xs font-bold text-teal-400 font-ios-mono">Editing Prompt #{idx + 1}</span>
                         <div className="flex space-x-2">
@@ -655,17 +697,17 @@ export default function QuestionsSettings() {
                             onClick={() => handleSaveEdit(q.id)}
                             disabled={saving}
                             style={{ background: 'var(--accent-gradient)', color: '#09090b' }}
-                            className="px-3 py-1 rounded-lg font-bold text-xs flex items-center space-x-1 cursor-pointer"
+                            className="px-3.5 py-1.5 rounded-lg font-bold text-xs flex items-center space-x-1 cursor-pointer shadow"
                           >
-                            <Check className="w-3.5 h-3.5" />
+                            <Check className="w-4 h-4" />
                             <span>Save Changes</span>
                           </button>
                           <button
                             type="button"
                             onClick={() => setEditingId(null)}
-                            className="px-3 py-1 rounded-lg font-bold text-xs bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-zinc-200 cursor-pointer"
+                            className="px-3 py-1.5 rounded-lg font-bold text-xs bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-zinc-200 cursor-pointer"
                           >
-                            <X className="w-3.5 h-3.5" />
+                            <X className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
@@ -673,7 +715,7 @@ export default function QuestionsSettings() {
                       <div className="grid gap-3 sm:grid-cols-12">
                         {/* Prompt text input */}
                         <div className="sm:col-span-6 space-y-1">
-                          <label className="block text-[10px] font-bold text-zinc-500 font-ios-mono uppercase">Prompt text</label>
+                          <label className="block text-[10px] font-bold text-zinc-400 font-ios-mono uppercase">Prompt text</label>
                           <input
                             type="text"
                             value={editingPrompt}
@@ -684,7 +726,7 @@ export default function QuestionsSettings() {
 
                         {/* Answer Format */}
                         <div className="sm:col-span-3 space-y-1">
-                          <label className="block text-[10px] font-bold text-zinc-500 font-ios-mono uppercase">Answer Format</label>
+                          <label className="block text-[10px] font-bold text-zinc-400 font-ios-mono uppercase">Answer Format</label>
                           <select
                             value={editingType}
                             onChange={(e) => setEditingType(e.target.value)}
@@ -699,22 +741,22 @@ export default function QuestionsSettings() {
 
                         {/* Habit Category */}
                         <div className="sm:col-span-3 space-y-1">
-                          <label className="block text-[10px] font-bold text-zinc-500 font-ios-mono uppercase">Category</label>
+                          <label className="block text-[10px] font-bold text-zinc-400 font-ios-mono uppercase">Category</label>
                           <select
                             value={editingHabitType}
                             onChange={(e) => setEditingHabitType(e.target.value as any)}
                             className="w-full px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-200 focus:outline-none text-xs font-ios-sans font-bold cursor-pointer"
                           >
-                            <option value="good">🟢 Good Habit</option>
-                            <option value="bad">🔴 Bad Habit</option>
-                            <option value="neutral">⚪ Neutral Metric</option>
+                            <option value="good">🟢 Good Habit (Build)</option>
+                            <option value="bad">🔴 Bad Habit (Break)</option>
+                            <option value="neutral">⚪ Neutral Metric (Track)</option>
                           </select>
                         </div>
                       </div>
 
                       {/* Icon Selector Grid inside Edit Box */}
                       <div className="space-y-1">
-                        <label className="block text-[10px] font-bold text-zinc-500 font-ios-mono uppercase">Change Icon</label>
+                        <label className="block text-[10px] font-bold text-zinc-400 font-ios-mono uppercase">Change Icon</label>
                         <div className="grid grid-cols-6 gap-1.5 bg-zinc-900/60 p-2.5 rounded-xl border border-zinc-800 max-w-sm">
                           {AVAILABLE_ICONS.map((item) => {
                             const Icon = item.icon;

@@ -78,6 +78,15 @@ export default function Dashboard() {
     return `${yyyy}-${mm}-${dd}`;
   };
 
+  const getLocalHabitTypeMap = (): Record<string, string> => {
+    if (typeof window === 'undefined') return {};
+    try {
+      return JSON.parse(localStorage.getItem('reflect_habit_types') || '{}');
+    } catch {
+      return {};
+    }
+  };
+
   useEffect(() => {
     const theme = localStorage.getItem('reflect_accent_theme') || 'teal';
     setActiveThemeId(theme);
@@ -108,7 +117,12 @@ export default function Dashboard() {
 
         if (qError) throw qError;
 
-        let loadedQuestions = activeQuestions || [];
+        const localHabits = getLocalHabitTypeMap();
+        let loadedQuestions = (activeQuestions || []).map((q: any) => ({
+          ...q,
+          habit_type: localHabits[q.id] || q.habit_type || 'good',
+        }));
+
         const isRandomized = localStorage.getItem('reflect_randomize_questions') === 'true';
         if (isRandomized) {
           loadedQuestions = shuffleArray(loadedQuestions);
@@ -138,7 +152,7 @@ export default function Dashboard() {
         setStreakInfo(streak);
         setLevelInfo(calculateUserLevel(logsList, activeThemeId));
         setBadges(calculateAchievementBadges(logsList, streak.currentStreak));
-        setMicroInsight(generateMicroInsight(logsList, activeQuestions || []));
+        setMicroInsight(generateMicroInsight(logsList, loadedQuestions));
 
         if (todayLog) {
           setLog(todayLog);
