@@ -218,7 +218,7 @@ export function calculateStreakWithFreezes(dates: string[]): StreakInfo {
 
   const milestoneList = [3, 5, 7, 10, 14, 21, 30, 50, 100];
   const isMilestone = milestoneList.includes(currentStreak);
-  let milestoneTitle = isMilestone ? `${currentStreak}-Day Milestone Unlocked! 🎉` : undefined;
+  const milestoneTitle = isMilestone ? `${currentStreak}-Day Milestone Unlocked! 🎉` : undefined;
 
   return { 
     currentStreak, 

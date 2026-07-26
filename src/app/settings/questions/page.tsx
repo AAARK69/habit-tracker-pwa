@@ -352,7 +352,7 @@ export default function QuestionsSettings() {
         icon: editingIcon,
       };
 
-      let { error } = await supabase
+      const { error } = await supabase
         .from('questions')
         .update(updatePayload)
         .eq('id', id);
