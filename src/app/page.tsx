@@ -48,6 +48,7 @@ export default function Dashboard() {
   const [submitting, setSubmitting] = useState(false);
   const [isListening, setIsListening] = useState<Record<string, boolean>>({});
   const [allLogDates, setAllLogDates] = useState<string[]>([]);
+  const [allLogsData, setAllLogsData] = useState<any[]>([]);
   const [activeThemeId, setActiveThemeId] = useState('teal');
   const [badges, setBadges] = useState<AchievementBadge[]>([]);
   const [streakInfo, setStreakInfo] = useState<StreakInfo>({
@@ -85,6 +86,37 @@ export default function Dashboard() {
     } catch {
       return {};
     }
+  };
+
+  const getHabitStreak = (q: any) => {
+    const isBadHabit = q.habit_type === 'bad';
+    const successfulDates = allLogsData
+      .filter((log) => {
+        const resp = log.responses?.[q.id];
+        if (resp === undefined || resp === null || resp === '') return false;
+        if (q.type === 'boolean') {
+          if (isBadHabit) return resp === false;
+          return resp === true;
+        }
+        return true;
+      })
+      .map((log) => log.date);
+
+    // Check if today's unsubmitted answer also counts as a success to provide immediate feedback
+    const todayStr = getLocalTodayDateStr();
+    const todayResp = answers[q.id];
+    if (todayResp !== undefined && todayResp !== null && todayResp !== '') {
+      let todaySuccess = true;
+      if (q.type === 'boolean') {
+        if (isBadHabit) todaySuccess = todayResp === false;
+        else todaySuccess = todayResp === true;
+      }
+      if (todaySuccess && !successfulDates.includes(todayStr)) {
+        successfulDates.push(todayStr);
+      }
+    }
+
+    return calculateStreakWithFreezes(successfulDates).currentStreak;
   };
 
   useEffect(() => {
@@ -147,6 +179,7 @@ export default function Dashboard() {
         const logsList = allLogs || [];
         const logDates = logsList.map((l: any) => l.date);
         setAllLogDates(logDates);
+        setAllLogsData(logsList);
         
         const streak = calculateStreakWithFreezes(logDates);
         setStreakInfo(streak);
@@ -311,6 +344,7 @@ export default function Dashboard() {
       const logsList = allLogs || [];
       const logDates = logsList.map((l: any) => l.date);
       setAllLogDates(logDates);
+      setAllLogsData(logsList);
       const streak = calculateStreakWithFreezes(logDates);
       setStreakInfo(streak);
       setLevelInfo(calculateUserLevel(logsList, activeThemeId));
@@ -524,6 +558,10 @@ export default function Dashboard() {
                                 <span className="inline-block text-[9px] font-bold font-ios-mono opacity-70">
                                   {habitType === 'good' ? '🟢 Good Habit' : habitType === 'bad' ? '🔴 Bad Habit' : '⚪ Neutral'}
                                 </span>
+                                <span className="inline-flex items-center text-[10px] font-bold font-ios-mono text-orange-400/90 ml-2">
+                                  <Flame className="w-3 h-3 mr-0.5" />
+                                  {getHabitStreak(q)} Day Streak
+                                </span>
                               </div>
                             </div>
 
@@ -715,11 +753,17 @@ export default function Dashboard() {
                           isText ? 'col-span-full' : ''
                         }`}
                       >
-                        <div className="flex items-center space-x-2.5">
-                          <div className="p-1 rounded bg-zinc-900 border border-zinc-850 text-zinc-400 shrink-0">
-                            <IconComponent className="w-3.5 h-3.5" />
+                        <div className="flex items-center justify-between w-full">
+                          <div className="flex items-center space-x-2.5">
+                            <div className="p-1 rounded bg-zinc-900 border border-zinc-850 text-zinc-400 shrink-0">
+                              <IconComponent className="w-3.5 h-3.5" />
+                            </div>
+                            <span className="text-xs font-semibold text-zinc-450 leading-tight font-ios-sans">{q.prompt}</span>
                           </div>
-                          <span className="text-xs font-semibold text-zinc-450 leading-tight font-ios-sans">{q.prompt}</span>
+                          <span className="inline-flex items-center text-[10px] font-bold font-ios-mono text-orange-400/90 ml-2 whitespace-nowrap">
+                            <Flame className="w-3 h-3 mr-0.5" />
+                            {getHabitStreak(q)}
+                          </span>
                         </div>
 
                         {q.type === 'text' ? (
