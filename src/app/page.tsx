@@ -18,7 +18,8 @@ import {
   Brain, Flame, Heart, Coffee, ClipboardList, CheckSquare, 
   HelpCircle, CheckCircle, Edit3, Loader2, Check, X, 
   MessageSquare, ShieldCheck, Award, Lightbulb, Share2, 
-  Mic, MicOff, Trophy, PenTool, Activity, Shuffle, ShieldAlert
+  Mic, MicOff, Trophy, PenTool, Activity, Shuffle, ShieldAlert,
+  Calendar, RotateCcw, ArrowLeft
 } from 'lucide-react';
 
 const IconMap: Record<string, any> = {
@@ -43,6 +44,7 @@ export default function Dashboard() {
   const [questions, setQuestions] = useState<any[]>([]);
   const [log, setLog] = useState<any>(null);
   const [answers, setAnswers] = useState<Record<string, any>>({});
+  const [selectedDate, setSelectedDate] = useState<string>('');
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -76,6 +78,15 @@ export default function Dashboard() {
     const yyyy = dateObj.getFullYear();
     const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
     const dd = String(dateObj.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  const getYesterdayDateStr = () => {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
     return `${yyyy}-${mm}-${dd}`;
   };
 
@@ -122,6 +133,7 @@ export default function Dashboard() {
   useEffect(() => {
     const theme = localStorage.getItem('reflect_accent_theme') || 'teal';
     setActiveThemeId(theme);
+    setSelectedDate(getLocalTodayDateStr());
 
     const handleThemeChange = () => {
       const updatedTheme = localStorage.getItem('reflect_accent_theme') || 'teal';
@@ -132,14 +144,13 @@ export default function Dashboard() {
     return () => window.removeEventListener('reflect_theme_change', handleThemeChange);
   }, []);
 
+  // Fetch Log for currently selectedDate
   useEffect(() => {
-    if (!user) return;
+    if (!user || !selectedDate) return;
 
-    const fetchData = async () => {
+    const fetchDataForDate = async () => {
       setLoading(true);
       try {
-        const todayStr = getLocalTodayDateStr();
-
         const { data: activeQuestions, error: qError } = await supabase
           .from('questions')
           .select('*')
@@ -162,11 +173,12 @@ export default function Dashboard() {
 
         setQuestions(loadedQuestions);
 
-        const { data: todayLog, error: logError } = await supabase
+        // Fetch Log for selectedDate
+        const { data: targetLog, error: logError } = await supabase
           .from('daily_logs')
           .select('*')
           .eq('user_id', user.id)
-          .eq('date', todayStr)
+          .eq('date', selectedDate)
           .maybeSingle();
 
         if (logError) throw logError;
@@ -187,15 +199,15 @@ export default function Dashboard() {
         setBadges(calculateAchievementBadges(logsList, streak.currentStreak));
         setMicroInsight(generateMicroInsight(logsList, loadedQuestions));
 
-        if (todayLog) {
-          setLog(todayLog);
-          setAnswers(todayLog.responses || {});
+        if (targetLog) {
+          setLog(targetLog);
+          setAnswers(targetLog.responses || {});
           setIsEditing(false);
-          updateAppBadge(0);
+          if (selectedDate === getLocalTodayDateStr()) updateAppBadge(0);
         } else {
           setLog(null);
           setIsEditing(true);
-          updateAppBadge(1);
+          if (selectedDate === getLocalTodayDateStr()) updateAppBadge(1);
           
           const initialAnswers: Record<string, any> = {};
           loadedQuestions?.forEach((q) => {
@@ -213,8 +225,8 @@ export default function Dashboard() {
       }
     };
 
-    fetchData();
-  }, [user, activeThemeId]);
+    fetchDataForDate();
+  }, [user, selectedDate, activeThemeId]);
 
   const activeThemeObj = ACCENT_THEMES.find((t) => t.id === activeThemeId) || ACCENT_THEMES[0];
 
@@ -303,10 +315,8 @@ export default function Dashboard() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user || !selectedDate) return;
     setSubmitting(true);
-
-    const todayStr = getLocalTodayDateStr();
 
     try {
       let result;
@@ -322,7 +332,7 @@ export default function Dashboard() {
           .from('daily_logs')
           .insert({
             user_id: user.id,
-            date: todayStr,
+            date: selectedDate,
             responses: answers,
           })
           .select()
@@ -334,7 +344,7 @@ export default function Dashboard() {
       triggerVariableReward();
       playCompletionChime();
       triggerHaptic(40);
-      updateAppBadge(0);
+      if (selectedDate === getLocalTodayDateStr()) updateAppBadge(0);
       setMotivationalQuote(getRandomQuote());
 
       const { data: allLogs } = await supabase
@@ -371,18 +381,63 @@ export default function Dashboard() {
   }
 
   const isDesktop = activeDevice === 'desktop';
+  const todayStr = getLocalTodayDateStr();
+  const yesterdayStr = getYesterdayDateStr();
+  const isTodaySelected = selectedDate === todayStr;
+  const isYesterdaySelected = selectedDate === yesterdayStr;
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Date Selector Header Toolbar */}
+      <div className="craft-card p-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 border-zinc-850">
+        <div className="flex items-center space-x-2 w-full sm:w-auto">
+          <Calendar className="w-4 h-4" style={{ color: 'var(--accent)' }} />
+          <span className="text-xs font-bold text-zinc-300 font-ios-mono uppercase">Log Date:</span>
+          <input
+            type="date"
+            max={todayStr}
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="px-3 py-1 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-ios-mono text-zinc-100 focus:outline-none cursor-pointer"
+          />
+        </div>
+
+        {/* Quick Date Shortcuts */}
+        <div className="flex items-center space-x-2 self-end sm:self-auto font-ios-mono">
+          <button
+            type="button"
+            onClick={() => setSelectedDate(todayStr)}
+            style={isTodaySelected ? { backgroundColor: 'var(--accent-glow)', color: 'var(--accent)', borderColor: 'var(--accent-border)' } : {}}
+            className={`px-3 py-1 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+              isTodaySelected ? 'shadow' : 'bg-zinc-950 border-zinc-850 text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
+            Today
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelectedDate(yesterdayStr)}
+            style={isYesterdaySelected ? { backgroundColor: 'var(--accent-glow)', color: 'var(--accent)', borderColor: 'var(--accent-border)' } : {}}
+            className={`px-3 py-1 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+              isYesterdaySelected ? 'shadow' : 'bg-zinc-950 border-zinc-850 text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
+            Yesterday 👈
+          </button>
+        </div>
+      </div>
+
+      {/* Main Header */}
       <div className="flex items-center justify-between gap-4">
         <div className="space-y-1">
           <h1 className="text-3xl font-extrabold text-zinc-50 tracking-tight font-ios-serif">
-            {isEditing ? "Today's Reflections" : "Day Complete 🎯"}
+            {isEditing 
+              ? (isTodaySelected ? "Today's Reflections" : `Past Log: ${selectedDate}`)
+              : `${selectedDate} Complete 🎯`}
           </h1>
           <p className="text-sm text-zinc-400 font-handwritten text-xl">
             {isEditing 
-              ? activeThemeObj.nicheQuote
+              ? (isTodaySelected ? activeThemeObj.nicheQuote : `Fill out missing habits for ${selectedDate}`)
               : "All habits logged & stamped. Take a rest and enjoy real life!"}
           </p>
         </div>
@@ -498,8 +553,17 @@ export default function Dashboard() {
             </div>
           )}
 
+          <NotificationToggle />
+
           {isEditing ? (
             <form onSubmit={handleSubmit} className="space-y-5">
+              {!isTodaySelected && (
+                <div className="p-3 rounded-xl border border-teal-500/30 bg-teal-500/10 text-teal-300 text-xs flex items-center space-x-2 font-ios-mono">
+                  <Calendar className="w-4 h-4 shrink-0" />
+                  <span>Logging reflections retroactively for <strong>{selectedDate}</strong> 📜</span>
+                </div>
+              )}
+
               {/* Question Form Toolbar */}
               {questions.length > 1 && (
                 <div className="flex items-center justify-between px-1">
@@ -690,7 +754,7 @@ export default function Dashboard() {
                       <Loader2 className="w-4 h-4 animate-spin text-zinc-950" />
                     ) : (
                       <span className="font-handwritten text-lg font-bold">
-                        {activeThemeObj.nicheStamp} (+70 XP)
+                        {isTodaySelected ? activeThemeObj.nicheStamp : `Save Past Entry for ${selectedDate} 📜`} (+70 XP)
                       </span>
                     )}
                   </button>
@@ -715,7 +779,7 @@ export default function Dashboard() {
                     className="text-[10px] font-ios-mono font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full border"
                     style={{ backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-border)', color: 'var(--accent)' }}
                   >
-                    {activeThemeObj.nicheStamp}
+                    {selectedDate} Stamped
                   </span>
                   <h3 className="text-xl font-black text-zinc-100 font-ios-serif">Day Complete 🎯</h3>
                   <p className="text-zinc-300 text-lg leading-relaxed font-handwritten">
@@ -739,7 +803,7 @@ export default function Dashboard() {
 
               {/* Saved entries grid */}
               <div className="space-y-2.5">
-                <h4 className="text-xs font-bold text-zinc-550 uppercase tracking-widest pl-1 font-ios-mono">Your Saved Entries</h4>
+                <h4 className="text-xs font-bold text-zinc-550 uppercase tracking-widest pl-1 font-ios-mono">Saved Entries for {selectedDate}</h4>
                 <div className={`grid gap-3 ${isDesktop ? 'grid-cols-2' : 'grid-cols-1'}`}>
                   {questions.map((q) => {
                     const val = answers[q.id];
