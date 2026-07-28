@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDeviceLayout } from '@/contexts/DeviceLayoutContext';
 import { supabase } from '@/lib/supabase';
@@ -19,7 +19,7 @@ import {
   HelpCircle, CheckCircle, Edit3, Loader2, Check, X, 
   MessageSquare, ShieldCheck, Award, Lightbulb, Share2, 
   Mic, MicOff, Trophy, PenTool, Activity, Shuffle, ShieldAlert,
-  Calendar, RotateCcw, ArrowLeft
+  Calendar, RotateCcw, Cloud, CloudCheck, HardDrive, Clock
 } from 'lucide-react';
 
 const IconMap: Record<string, any> = {
@@ -38,6 +38,8 @@ const IconMap: Record<string, any> = {
   'help-circle': HelpCircle
 };
 
+type AutoSaveStatus = 'saved' | 'saving' | 'offline' | 'idle';
+
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
   const { activeDevice } = useDeviceLayout();
@@ -50,9 +52,15 @@ export default function Dashboard() {
   const [submitting, setSubmitting] = useState(false);
   const [isListening, setIsListening] = useState<Record<string, boolean>>({});
   const [allLogDates, setAllLogDates] = useState<string[]>([]);
-  const [allLogsData, setAllLogsData] = useState<any[]>([]);
   const [activeThemeId, setActiveThemeId] = useState('teal');
   const [badges, setBadges] = useState<AchievementBadge[]>([]);
+
+  // Robust Auto-Save State
+  const [autoSaveStatus, setAutoSaveStatus] = useState<AutoSaveStatus>('idle');
+  const [lastSavedTime, setLastSavedTime] = useState<string | null>(null);
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isInitialMount = useRef<boolean>(true);
+
   const [streakInfo, setStreakInfo] = useState<StreakInfo>({
     currentStreak: 0,
     bestStreak: 0,
@@ -99,36 +107,8 @@ export default function Dashboard() {
     }
   };
 
-  const getHabitStreak = (q: any) => {
-    const isBadHabit = q.habit_type === 'bad';
-    const successfulDates = allLogsData
-      .filter((log) => {
-        const resp = log.responses?.[q.id];
-        if (resp === undefined || resp === null || resp === '') return false;
-        if (q.type === 'boolean') {
-          if (isBadHabit) return resp === false;
-          return resp === true;
-        }
-        return true;
-      })
-      .map((log) => log.date);
-
-    // Check if today's unsubmitted answer also counts as a success to provide immediate feedback
-    const todayStr = getLocalTodayDateStr();
-    const todayResp = answers[q.id];
-    if (todayResp !== undefined && todayResp !== null && todayResp !== '') {
-      let todaySuccess = true;
-      if (q.type === 'boolean') {
-        if (isBadHabit) todaySuccess = todayResp === false;
-        else todaySuccess = todayResp === true;
-      }
-      if (todaySuccess && !successfulDates.includes(todayStr)) {
-        successfulDates.push(todayStr);
-      }
-    }
-
-    return calculateStreakWithFreezes(successfulDates).currentStreak;
-  };
+  // Account-isolated draft storage keys
+  const getDraftStorageKey = (userId: string, date: string) => `reflect_draft_${userId}_${date}`;
 
   useEffect(() => {
     const theme = localStorage.getItem('reflect_accent_theme') || 'teal';
@@ -144,9 +124,12 @@ export default function Dashboard() {
     return () => window.removeEventListener('reflect_theme_change', handleThemeChange);
   }, []);
 
-  // Fetch Log for currently selectedDate
+  // Account & Date isolated data loader
   useEffect(() => {
     if (!user || !selectedDate) return;
+
+    isInitialMount.current = true;
+    setAutoSaveStatus('idle');
 
     const fetchDataForDate = async () => {
       setLoading(true);
@@ -173,7 +156,7 @@ export default function Dashboard() {
 
         setQuestions(loadedQuestions);
 
-        // Fetch Log for selectedDate
+        // Fetch Log for selectedDate & user.id
         const { data: targetLog, error: logError } = await supabase
           .from('daily_logs')
           .select('*')
@@ -191,7 +174,6 @@ export default function Dashboard() {
         const logsList = allLogs || [];
         const logDates = logsList.map((l: any) => l.date);
         setAllLogDates(logDates);
-        setAllLogsData(logsList);
         
         const streak = calculateStreakWithFreezes(logDates);
         setStreakInfo(streak);
@@ -203,30 +185,91 @@ export default function Dashboard() {
           setLog(targetLog);
           setAnswers(targetLog.responses || {});
           setIsEditing(false);
+          setAutoSaveStatus('saved');
           if (selectedDate === getLocalTodayDateStr()) updateAppBadge(0);
         } else {
           setLog(null);
           setIsEditing(true);
           if (selectedDate === getLocalTodayDateStr()) updateAppBadge(1);
           
-          const initialAnswers: Record<string, any> = {};
-          loadedQuestions?.forEach((q) => {
-            if (q.type === 'boolean') initialAnswers[q.id] = null;
-            else if (q.type === 'number') initialAnswers[q.id] = '';
-            else if (q.type === 'scale_1_to_5') initialAnswers[q.id] = 3;
-            else if (q.type === 'text') initialAnswers[q.id] = '';
-          });
-          setAnswers(initialAnswers);
+          // Check account-isolated local draft
+          const draftKey = getDraftStorageKey(user.id, selectedDate);
+          const savedDraft = localStorage.getItem(draftKey);
+
+          if (savedDraft) {
+            try {
+              const parsedDraft = JSON.parse(savedDraft);
+              setAnswers(parsedDraft);
+              setAutoSaveStatus('offline');
+            } catch {
+              setInitialDefaultAnswers(loadedQuestions);
+            }
+          } else {
+            setInitialDefaultAnswers(loadedQuestions);
+          }
         }
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
       } finally {
         setLoading(false);
+        setTimeout(() => {
+          isInitialMount.current = false;
+        }, 300);
       }
     };
 
     fetchDataForDate();
-  }, [user, selectedDate, activeThemeId]);
+  }, [user?.id, selectedDate, activeThemeId]);
+
+  const setInitialDefaultAnswers = (qs: any[]) => {
+    const initialAnswers: Record<string, any> = {};
+    qs?.forEach((q) => {
+      if (q.type === 'boolean') initialAnswers[q.id] = null;
+      else if (q.type === 'number') initialAnswers[q.id] = '';
+      else if (q.type === 'scale_1_to_5') initialAnswers[q.id] = 3;
+      else if (q.type === 'text') initialAnswers[q.id] = '';
+    });
+    setAnswers(initialAnswers);
+  };
+
+  // Perform background debounced auto-save across accounts
+  const performAutoSave = useCallback(
+    async (updatedAnswers: Record<string, any>) => {
+      if (!user || !selectedDate || isInitialMount.current) return;
+      
+      setAutoSaveStatus('saving');
+
+      // 1. Save to account-isolated local storage draft immediately
+      const draftKey = getDraftStorageKey(user.id, selectedDate);
+      localStorage.setItem(draftKey, JSON.stringify(updatedAnswers));
+
+      // 2. Perform Supabase upsert for user.id + date
+      try {
+        const payload = {
+          user_id: user.id,
+          date: selectedDate,
+          responses: updatedAnswers,
+        };
+
+        const { data, error } = await supabase
+          .from('daily_logs')
+          .upsert(payload, { onConflict: 'user_id, date' })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        if (data) setLog(data);
+        const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        setLastSavedTime(timeNow);
+        setAutoSaveStatus('saved');
+      } catch (err) {
+        console.warn('Auto-save network notice (saved locally):', err);
+        setAutoSaveStatus('offline');
+      }
+    },
+    [user?.id, selectedDate]
+  );
 
   const activeThemeObj = ACCENT_THEMES.find((t) => t.id === activeThemeId) || ACCENT_THEMES[0];
 
@@ -237,10 +280,17 @@ export default function Dashboard() {
 
   const handleAnswerChange = (questionId: string, value: any) => {
     triggerHaptic(10);
-    setAnswers((prev) => ({
-      ...prev,
+    const updated = {
+      ...answers,
       [questionId]: value,
-    }));
+    };
+    setAnswers(updated);
+
+    // Debounced real-time auto-save trigger (800ms)
+    if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
+    autoSaveTimeoutRef.current = setTimeout(() => {
+      performAutoSave(updated);
+    }, 800);
   };
 
   const toggleVoiceJournaling = (questionId: string) => {
@@ -271,10 +321,8 @@ export default function Dashboard() {
 
       recognition.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
-        setAnswers((prev) => ({
-          ...prev,
-          [questionId]: prev[questionId] ? `${prev[questionId]} ${transcript}` : transcript,
-        }));
+        const newText = answers[questionId] ? `${answers[questionId]} ${transcript}` : transcript;
+        handleAnswerChange(questionId, newText);
         setIsListening((prev) => ({ ...prev, [questionId]: false }));
         triggerHaptic(15);
       };
@@ -319,27 +367,23 @@ export default function Dashboard() {
     setSubmitting(true);
 
     try {
-      let result;
-      if (log) {
-        result = await supabase
-          .from('daily_logs')
-          .update({ responses: answers })
-          .eq('id', log.id)
-          .select()
-          .single();
-      } else {
-        result = await supabase
-          .from('daily_logs')
-          .insert({
-            user_id: user.id,
-            date: selectedDate,
-            responses: answers,
-          })
-          .select()
-          .single();
-      }
+      const payload = {
+        user_id: user.id,
+        date: selectedDate,
+        responses: answers,
+      };
 
-      if (result.error) throw result.error;
+      const { data, error } = await supabase
+        .from('daily_logs')
+        .upsert(payload, { onConflict: 'user_id, date' })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Clean draft key after explicit submission
+      const draftKey = getDraftStorageKey(user.id, selectedDate);
+      localStorage.removeItem(draftKey);
 
       triggerVariableReward();
       playCompletionChime();
@@ -354,15 +398,15 @@ export default function Dashboard() {
       const logsList = allLogs || [];
       const logDates = logsList.map((l: any) => l.date);
       setAllLogDates(logDates);
-      setAllLogsData(logsList);
       const streak = calculateStreakWithFreezes(logDates);
       setStreakInfo(streak);
       setLevelInfo(calculateUserLevel(logsList, activeThemeId));
       setBadges(calculateAchievementBadges(logsList, streak.currentStreak));
       setMicroInsight(generateMicroInsight(logsList, questions));
 
-      setLog(result.data);
+      setLog(data);
       setIsEditing(false);
+      setAutoSaveStatus('saved');
     } catch (err: any) {
       console.error('Error saving daily log:', err);
       alert('Failed to save log: ' + err.message);
@@ -564,23 +608,48 @@ export default function Dashboard() {
                 </div>
               )}
 
-              {/* Question Form Toolbar */}
-              {questions.length > 1 && (
-                <div className="flex items-center justify-between px-1">
-                  <span className="text-xs font-bold text-zinc-500 font-ios-mono uppercase tracking-widest">
-                    Daily Questionnaire ({questions.length})
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleShuffleQuestions}
-                    style={{ color: 'var(--accent)', backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-border)' }}
-                    className="flex items-center space-x-1 text-xs font-ios-mono font-bold px-2.5 py-1 rounded-xl border hover:opacity-80 transition-opacity cursor-pointer"
-                  >
-                    <Shuffle className="w-3 h-3" />
-                    <span>Shuffle 🎲</span>
-                  </button>
+              {/* Question Form Toolbar & Real-time Auto-Save Status Badge */}
+              <div className="flex items-center justify-between px-1">
+                <span className="text-xs font-bold text-zinc-500 font-ios-mono uppercase tracking-widest">
+                  Daily Questionnaire ({questions.length})
+                </span>
+
+                <div className="flex items-center space-x-3">
+                  {/* Real-time Auto-Save Status Indicator */}
+                  <div className="flex items-center space-x-1.5 text-[10px] font-ios-mono">
+                    {autoSaveStatus === 'saving' && (
+                      <span className="flex items-center space-x-1 text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
+                        <Loader2 className="w-3 h-3 animate-spin text-amber-400" />
+                        <span>Saving...</span>
+                      </span>
+                    )}
+                    {autoSaveStatus === 'saved' && (
+                      <span className="flex items-center space-x-1 text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                        <Cloud className="w-3 h-3 text-emerald-400" />
+                        <span>Auto-saved {lastSavedTime ? `at ${lastSavedTime}` : ''}</span>
+                      </span>
+                    )}
+                    {autoSaveStatus === 'offline' && (
+                      <span className="flex items-center space-x-1 text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
+                        <HardDrive className="w-3 h-3 text-amber-400" />
+                        <span>Draft Saved Offline</span>
+                      </span>
+                    )}
+                  </div>
+
+                  {questions.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={handleShuffleQuestions}
+                      style={{ color: 'var(--accent)', backgroundColor: 'var(--accent-glow)', borderColor: 'var(--accent-border)' }}
+                      className="flex items-center space-x-1 text-xs font-ios-mono font-bold px-2.5 py-1 rounded-xl border hover:opacity-80 transition-opacity cursor-pointer"
+                    >
+                      <Shuffle className="w-3 h-3" />
+                      <span>Shuffle 🎲</span>
+                    </button>
+                  )}
                 </div>
-              )}
+              </div>
 
               {questions.length === 0 ? (
                 <div className="craft-card p-8 text-center space-y-3 border-zinc-800 bg-zinc-900/10">
@@ -621,10 +690,6 @@ export default function Dashboard() {
                                 {/* Habit Category Tag */}
                                 <span className="inline-block text-[9px] font-bold font-ios-mono opacity-70">
                                   {habitType === 'good' ? '🟢 Good Habit' : habitType === 'bad' ? '🔴 Bad Habit' : '⚪ Neutral'}
-                                </span>
-                                <span className="inline-flex items-center text-[10px] font-bold font-ios-mono text-orange-400/90 ml-2">
-                                  <Flame className="w-3 h-3 mr-0.5" />
-                                  {getHabitStreak(q)} Day Streak
                                 </span>
                               </div>
                             </div>
@@ -817,17 +882,11 @@ export default function Dashboard() {
                           isText ? 'col-span-full' : ''
                         }`}
                       >
-                        <div className="flex items-center justify-between w-full">
-                          <div className="flex items-center space-x-2.5">
-                            <div className="p-1 rounded bg-zinc-900 border border-zinc-850 text-zinc-400 shrink-0">
-                              <IconComponent className="w-3.5 h-3.5" />
-                            </div>
-                            <span className="text-xs font-semibold text-zinc-450 leading-tight font-ios-sans">{q.prompt}</span>
+                        <div className="flex items-center space-x-2.5">
+                          <div className="p-1 rounded bg-zinc-900 border border-zinc-850 text-zinc-400 shrink-0">
+                            <IconComponent className="w-3.5 h-3.5" />
                           </div>
-                          <span className="inline-flex items-center text-[10px] font-bold font-ios-mono text-orange-400/90 ml-2 whitespace-nowrap">
-                            <Flame className="w-3 h-3 mr-0.5" />
-                            {getHabitStreak(q)}
-                          </span>
+                          <span className="text-xs font-semibold text-zinc-450 leading-tight font-ios-sans">{q.prompt}</span>
                         </div>
 
                         {q.type === 'text' ? (
