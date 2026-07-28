@@ -4,7 +4,7 @@ import confetti from 'canvas-confetti';
 export function triggerVariableReward() {
   if (typeof window === 'undefined') return;
 
-  const count = 180;
+  const count = 150;
   const defaults = {
     origin: { y: 0.65 }
   };
@@ -61,17 +61,29 @@ export function shuffleArray<T>(array: T[]): T[] {
   return arr;
 }
 
-// 4. Audio Chime Synthesis (iOS AudioContext Resume Fix)
+// Global Audio Context Singleton to prevent AudioContext thread leaks
+let globalAudioCtx: AudioContext | null = null;
+
+function getSharedAudioContext(): AudioContext | null {
+  if (typeof window === 'undefined') return null;
+  const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+  if (!AudioCtx) return null;
+
+  if (!globalAudioCtx || globalAudioCtx.state === 'closed') {
+    globalAudioCtx = new AudioCtx();
+  }
+  return globalAudioCtx;
+}
+
+// 4. Audio Chime Synthesis (Singleton AudioContext)
 export function playCompletionChime() {
   if (typeof window === 'undefined') return;
   const soundEnabled = localStorage.getItem('reflect_sound_enabled') !== 'false';
   if (!soundEnabled) return;
 
   try {
-    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioCtx) return;
-    
-    const ctx = new AudioCtx();
+    const ctx = getSharedAudioContext();
+    if (!ctx) return;
     
     if (ctx.state === 'suspended') {
       ctx.resume().catch(() => {});

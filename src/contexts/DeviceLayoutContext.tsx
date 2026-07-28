@@ -24,6 +24,8 @@ export function DeviceLayoutProvider({ children }: { children: React.ReactNode }
     const saved = (localStorage.getItem('reflect_layout_mode') as LayoutMode) || 'auto';
     setLayoutModeState(saved);
 
+    let resizeTimer: NodeJS.Timeout | null = null;
+
     const checkDevice = () => {
       if (typeof window === 'undefined') return;
 
@@ -33,7 +35,6 @@ export function DeviceLayoutProvider({ children }: { children: React.ReactNode }
       const isPhoneUA = /iPhone|iPod|Android.*Mobile/i.test(navigator.userAgent);
 
       // PC Widescreen Desktop Mode vs Mobile PWA Mode
-      // Mobile if width < 768px OR (phone user agent AND portrait aspect ratio)
       if (width < 768 || (isPhoneUA && isPortrait)) {
         setDetectedDevice('mobile');
       } else {
@@ -43,12 +44,18 @@ export function DeviceLayoutProvider({ children }: { children: React.ReactNode }
 
     checkDevice();
 
-    window.addEventListener('resize', checkDevice);
-    window.addEventListener('orientationchange', checkDevice);
+    const debouncedCheckDevice = () => {
+      if (resizeTimer) clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(checkDevice, 100);
+    };
+
+    window.addEventListener('resize', debouncedCheckDevice);
+    window.addEventListener('orientationchange', debouncedCheckDevice);
 
     return () => {
-      window.removeEventListener('resize', checkDevice);
-      window.removeEventListener('orientationchange', checkDevice);
+      if (resizeTimer) clearTimeout(resizeTimer);
+      window.removeEventListener('resize', debouncedCheckDevice);
+      window.removeEventListener('orientationchange', debouncedCheckDevice);
     };
   }, []);
 
