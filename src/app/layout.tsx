@@ -58,16 +58,16 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${caveat.variable} ${lora.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${caveat.variable} ${lora.variable} h-full antialiased max-w-full overflow-x-hidden`}
     >
-      <body className="min-h-full flex flex-col bg-zinc-950 text-zinc-50 font-sans journal-grid relative">
+      <body className="min-h-full flex flex-col bg-zinc-950 text-zinc-50 font-sans journal-grid relative max-w-full overflow-x-hidden touch-pan-y">
         <AuthProvider>
           <DeviceLayoutProvider>
             <ThemeProvider>
               <AmbientParticles />
               <ServiceWorkerRegister />
               <Navigation />
-              <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 z-10 relative">
+              <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 z-10 relative overflow-x-hidden">
                 {children}
               </main>
             </ThemeProvider>
