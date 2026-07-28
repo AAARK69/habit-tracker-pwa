@@ -66,7 +66,10 @@ export default function RootLayout({
             <ThemeProvider>
               <AmbientParticles />
               <ServiceWorkerRegister />
-              <Navigation>{children}</Navigation>
+              <Navigation />
+              <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 z-10 relative">
+                {children}
+              </main>
             </ThemeProvider>
           </DeviceLayoutProvider>
         </AuthProvider>

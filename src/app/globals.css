@@ -1,179 +1,133 @@
 @import "tailwindcss";
 
-:root {
-  --background: #0c0d0e;
-  --foreground: #f4f4f5;
-  --card-bg: rgba(18, 19, 22, 0.78);
-  --card-border: rgba(255, 255, 255, 0.09);
-  --card-radius: 1.25rem;
-  
-  --accent: #2dd4bf;
-  --accent-glow: rgba(45, 212, 191, 0.15);
-  --accent-border: rgba(45, 212, 191, 0.35);
-  --accent-gradient: linear-gradient(135deg, #2dd4bf, #34d399);
+@layer base {
+  :root {
+    --accent: #2dd4bf;
+    --accent-glow: rgba(45, 212, 191, 0.15);
+    --accent-border: rgba(45, 212, 191, 0.35);
+    --accent-gradient: linear-gradient(135deg, #2dd4bf 0%, #34d399 50%, #38bdf8 100%);
+    --background: #09090b;
+    --card-bg: rgba(18, 19, 22, 0.75);
+    --card-border: rgba(255, 255, 255, 0.08);
+  }
 
-  /* Native iOS System Font Stacks */
-  --font-ios-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "SF Pro", system-ui, var(--font-geist-sans), sans-serif;
-  --font-ios-rounded: "SF Pro Rounded", ui-rounded, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-  --font-ios-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, var(--font-geist-mono), monospace;
-  --font-ios-serif: ui-serif, "New York", Georgia, Cambria, var(--font-lora), serif;
-  --font-handwritten: var(--font-caveat), cursive;
-  
-  --theme-grid-pattern: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
-  --theme-grid-size: 20px 20px;
+  [data-theme="cyan"] {
+    --accent: #06b6d4;
+    --accent-glow: rgba(6, 182, 212, 0.18);
+    --accent-border: rgba(6, 182, 212, 0.4);
+    --accent-gradient: linear-gradient(135deg, #06b6d4 0%, #3b82f6 50%, #6366f1 100%);
+    --background: #040810;
+    --card-bg: rgba(10, 18, 30, 0.8);
+    --card-border: rgba(6, 182, 212, 0.25);
+  }
+
+  [data-theme="purple"] {
+    --accent: #c084fc;
+    --accent-glow: rgba(192, 132, 252, 0.18);
+    --accent-border: rgba(192, 132, 252, 0.4);
+    --accent-gradient: linear-gradient(135deg, #c084fc 0%, #a855f7 50%, #e879f9 100%);
+    --background: #0b0712;
+    --card-bg: rgba(22, 14, 34, 0.8);
+    --card-border: rgba(192, 132, 252, 0.25);
+  }
+
+  [data-theme="rose"] {
+    --accent: #fb7185;
+    --accent-glow: rgba(251, 113, 133, 0.18);
+    --accent-border: rgba(251, 113, 133, 0.4);
+    --accent-gradient: linear-gradient(135deg, #fb7185 0%, #f43f5e 50%, #fda4af 100%);
+    --background: #110609;
+    --card-bg: rgba(30, 12, 18, 0.8);
+    --card-border: rgba(251, 113, 133, 0.25);
+  }
+
+  [data-theme="amber"] {
+    --accent: #fbbf24;
+    --accent-glow: rgba(251, 191, 36, 0.18);
+    --accent-border: rgba(251, 191, 36, 0.4);
+    --accent-gradient: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #f97316 100%);
+    --background: #0e0a04;
+    --card-bg: rgba(26, 18, 8, 0.8);
+    --card-border: rgba(251, 191, 36, 0.25);
+  }
+
+  body {
+    background-color: var(--background);
+    color: #f4f4f5;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
+    overflow-x: hidden;
+    transition: background-color 0.4s ease, color 0.4s ease;
+  }
 }
 
-/* 1. EMERALD TEAL THEME (Classic Bullet Journal) */
-[data-theme="teal"] {
-  --background: #0c0d0e;
-  --foreground: #f4f4f5;
-  --card-bg: rgba(18, 19, 22, 0.78);
-  --card-border: rgba(45, 212, 191, 0.2);
-  --card-radius: 1.25rem;
-
-  --accent: #2dd4bf;
-  --accent-glow: rgba(45, 212, 191, 0.15);
-  --accent-border: rgba(45, 212, 191, 0.35);
-  --accent-gradient: linear-gradient(135deg, #2dd4bf, #34d399);
-
-  --theme-grid-pattern: radial-gradient(rgba(45, 212, 191, 0.12) 1px, transparent 1px);
-  --theme-grid-size: 20px 20px;
-}
-
-/* 2. CYBERPUNK CYAN THEME (High-Tech Synthwave Terminal) */
-[data-theme="cyan"] {
-  --background: #050b14;
-  --foreground: #e0f2fe;
-  --card-bg: rgba(6, 182, 212, 0.06);
-  --card-border: rgba(6, 182, 212, 0.4);
-  --card-radius: 0.5rem; /* Sharp cybernetic edges */
-
-  --accent: #06b6d4;
-  --accent-glow: rgba(6, 182, 212, 0.22);
-  --accent-border: rgba(6, 182, 212, 0.5);
-  --accent-gradient: linear-gradient(135deg, #06b6d4, #38bdf8);
-
-  --theme-grid-pattern: linear-gradient(90deg, rgba(6, 182, 212, 0.07) 1px, transparent 1px), linear-gradient(0deg, rgba(6, 182, 212, 0.07) 1px, transparent 1px);
-  --theme-grid-size: 24px 24px;
-}
-
-/* 3. AMETHYST PURPLE THEME (Cosmic Galaxy & Tarot Mysticism) */
-[data-theme="purple"] {
-  --background: #0f0718;
-  --foreground: #f3e8ff;
-  --card-bg: rgba(192, 132, 252, 0.08);
-  --card-border: rgba(192, 132, 252, 0.3);
-  --card-radius: 1.5rem; /* Soft curved celestial panels */
-
-  --accent: #c084fc;
-  --accent-glow: rgba(192, 132, 252, 0.2);
-  --accent-border: rgba(192, 132, 252, 0.45);
-  --accent-gradient: linear-gradient(135deg, #c084fc, #e879f9);
-
-  --theme-grid-pattern: radial-gradient(rgba(192, 132, 252, 0.2) 1px, transparent 1px);
-  --theme-grid-size: 16px 16px;
-}
-
-/* 4. SUNSET ROSE THEME (Retrowave Sunrise & Warm Glow) */
-[data-theme="rose"] {
-  --background: #180914;
-  --foreground: #fff1f2;
-  --card-bg: rgba(251, 113, 133, 0.08);
-  --card-border: rgba(251, 113, 133, 0.35);
-  --card-radius: 1.25rem;
-
-  --accent: #fb7185;
-  --accent-glow: rgba(251, 113, 133, 0.2);
-  --accent-border: rgba(251, 113, 133, 0.45);
-  --accent-gradient: linear-gradient(135deg, #fb7185, #f43f5e);
-
-  --theme-grid-pattern: repeating-linear-gradient(45deg, rgba(251, 113, 133, 0.04) 0px, rgba(251, 113, 133, 0.04) 2px, transparent 2px, transparent 14px);
-  --theme-grid-size: 100% 100%;
-}
-
-/* 5. GOLDEN AMBER THEME (Vintage Parchment & Golden Alchemy) */
-[data-theme="amber"] {
-  --background: #140e05;
-  --foreground: #fef3c7;
-  --card-bg: rgba(251, 191, 36, 0.07);
-  --card-border: rgba(251, 191, 36, 0.35);
-  --card-radius: 1rem;
-
-  --accent: #fbbf24;
-  --accent-glow: rgba(251, 191, 36, 0.2);
-  --accent-border: rgba(251, 191, 36, 0.45);
-  --accent-gradient: linear-gradient(135deg, #fbbf24, #f59e0b);
-
-  --theme-grid-pattern: radial-gradient(rgba(251, 191, 36, 0.15) 1.5px, transparent 1.5px);
-  --theme-grid-size: 22px 22px;
-}
-
-body {
-  background-color: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-ios-sans);
-  overflow-x: hidden;
-  -webkit-tap-highlight-color: transparent;
-  transition: background-color 0.4s ease, color 0.4s ease;
-}
-
-/* Dynamic Grid Background Pattern per Theme */
+/* Custom Journal Background Pattern */
 .journal-grid {
-  background-image: var(--theme-grid-pattern);
-  background-size: var(--theme-grid-size);
+  background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 24px 24px;
 }
 
-/* Dynamic Theme Craft Card Style */
+/* Glassmorphic Craft Card */
 .craft-card {
   background: var(--card-bg);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--card-border);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
-  border-radius: var(--card-radius);
-  transition: all 0.3s ease;
+  border-radius: 1.25rem;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37), inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
-/* iOS Font Utility Classes */
-.font-ios-sans {
-  font-family: var(--font-ios-sans);
-}
-
-.font-ios-rounded {
-  font-family: var(--font-ios-rounded);
-}
-
-.font-ios-mono {
-  font-family: var(--font-ios-mono);
-}
-
-.font-ios-serif {
-  font-family: var(--font-ios-serif);
-}
-
-.font-handwritten {
-  font-family: var(--font-handwritten), cursive;
-}
-
-/* Accent Utilities driven by dynamic theme variables */
-.theme-accent-color {
-  color: var(--accent);
-}
-
-.theme-accent-bg {
-  background-color: var(--accent-glow);
-}
-
-.theme-accent-border {
+.craft-card:hover {
   border-color: var(--accent-border);
+  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.45), inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
 }
 
-.theme-accent-gradient {
-  background: var(--accent-gradient);
-}
-
+/* Glowing Accent Button */
 .glow-btn {
   position: relative;
-  overflow: hidden;
-  transition: all 0.3s ease;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glow-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 20px var(--accent-glow);
+}
+
+.glow-btn:active {
+  transform: translateY(0px) scale(0.98);
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeInUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Shimmer Loading Skeleton */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.03) 25%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.03) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.8s infinite;
 }
